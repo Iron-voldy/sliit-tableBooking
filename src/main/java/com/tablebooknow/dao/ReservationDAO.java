@@ -11,7 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -195,6 +195,54 @@ public class ReservationDAO {
     }
 
     /**
+     * Gets all tables that are reserved for a specific date and time slot.
+     * @param date The date in YYYY-MM-DD format
+     * @param time The time in HH:MM format
+     * @param duration The duration in hours
+     * @return List of table IDs that are reserved
+     */
+    public List<String> getReservedTables(String date, String time, int duration) throws IOException {
+        List<String> reservedTables = new ArrayList<>();
+
+        if (!FileHandler.fileExists(FILE_PATH)) {
+            return reservedTables;
+        }
+
+        LocalTime requestedTime;
+        try {
+            requestedTime = LocalTime.parse(time);
+        } catch (DateTimeParseException e) {
+            System.err.println("Invalid time format: " + time);
+            throw new IllegalArgumentException("Invalid time format: " + time);
+        }
+
+        LocalTime requestedEndTime = requestedTime.plusHours(duration);
+
+        List<Reservation> dateReservations = findByDate(date);
+
+        for (Reservation reservation : dateReservations) {
+            if (reservation.getStatus().equals("cancelled")) {
+                continue;
+            }
+
+            String tableId = reservation.getTableId();
+            if (tableId == null || tableId.isEmpty()) {
+                continue;
+            }
+
+            LocalTime reservationTime = LocalTime.parse(reservation.getReservationTime());
+            LocalTime reservationEndTime = reservationTime.plusHours(reservation.getDuration());
+
+            // Check if time slots overlap
+            if (requestedTime.isBefore(reservationEndTime) && reservationTime.isBefore(requestedEndTime)) {
+                reservedTables.add(tableId);
+            }
+        }
+
+        return reservedTables;
+    }
+
+    /**
      * Checks if a table is available at a specific date and time for a given duration.
      * @param tableId The table ID
      * @param date The date in YYYY-MM-DD format
@@ -212,17 +260,30 @@ public class ReservationDAO {
         }
 
         // Parse the requested time
-        LocalTime requestedTime = LocalTime.parse(time);
+        LocalTime requestedTime;
+        try {
+            requestedTime = LocalTime.parse(time);
+        } catch (DateTimeParseException e) {
+            System.err.println("Invalid time format: " + time);
+            return false;
+        }
+
         LocalTime endTime = requestedTime.plusHours(duration);
 
         // Check if there's any reservation that would conflict
         for (Reservation reservation : reservations) {
-            LocalTime reservationTime = LocalTime.parse(reservation.getReservationTime());
-            LocalTime reservationEndTime = reservationTime.plusHours(reservation.getDuration());
+            try {
+                LocalTime reservationTime = LocalTime.parse(reservation.getReservationTime());
+                LocalTime reservationEndTime = reservationTime.plusHours(reservation.getDuration());
 
-            // Check for overlap
-            if (requestedTime.isBefore(reservationEndTime) && reservationTime.isBefore(endTime)) {
-                return false;
+                // Check for overlap
+                if (requestedTime.isBefore(reservationEndTime) && reservationTime.isBefore(endTime)) {
+                    return false;
+                }
+            } catch (DateTimeParseException e) {
+                System.err.println("Invalid time format in reservation: " + reservation.getReservationTime());
+                // Skip this reservation if time format is invalid
+                continue;
             }
         }
 
@@ -385,12 +446,23 @@ public class ReservationDAO {
      */
     public List<Reservation> findUpcomingReservations(String date, String time) throws IOException {
         List<Reservation> dateReservations = findByDate(date);
-        LocalTime currentTime = LocalTime.parse(time);
+        LocalTime currentTime;
+
+        try {
+            currentTime = LocalTime.parse(time);
+        } catch (DateTimeParseException e) {
+            System.err.println("Invalid time format: " + time);
+            return new ArrayList<>();
+        }
 
         return dateReservations.stream()
                 .filter(r -> {
-                    LocalTime reservationTime = LocalTime.parse(r.getReservationTime());
-                    return reservationTime.isAfter(currentTime) || reservationTime.equals(currentTime);
+                    try {
+                        LocalTime reservationTime = LocalTime.parse(r.getReservationTime());
+                        return reservationTime.isAfter(currentTime) || reservationTime.equals(currentTime);
+                    } catch (DateTimeParseException e) {
+                        return false;
+                    }
                 })
                 .collect(Collectors.toList());
     }

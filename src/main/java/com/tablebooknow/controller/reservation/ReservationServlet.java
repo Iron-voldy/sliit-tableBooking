@@ -18,6 +18,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @WebServlet("/reservation/*")
 public class ReservationServlet extends HttpServlet {
@@ -57,22 +58,10 @@ public class ReservationServlet extends HttpServlet {
                 request.getRequestDispatcher("/dateSelection.jsp").forward(request, response);
                 break;
             case "/tableSelection":
-                // Get reservation date and time from request parameters
-                String reservationDate = request.getParameter("reservationDate");
-                String reservationTime = request.getParameter("reservationTime");
-                System.out.println("Table selection requested with date=" + reservationDate + ", time=" + reservationTime);
-
-                if (reservationDate == null || reservationTime == null) {
-                    System.out.println("Missing date or time, redirecting to date selection page");
-                    response.sendRedirect(request.getContextPath() + "/dateSelection.jsp");
-                    return;
-                }
-
-                // Set these values as attributes for the table selection page
-                request.setAttribute("reservationDate", reservationDate);
-                request.setAttribute("reservationTime", reservationTime);
-                System.out.println("Forwarding to table selection page with date and time attributes set");
-                request.getRequestDispatcher("/tableSelection.jsp").forward(request, response);
+                handleTableSelectionRequest(request, response);
+                break;
+            case "/getReservedTables":
+                handleGetReservedTablesRequest(request, response);
                 break;
             default:
                 System.out.println("Unknown path: " + pathInfo + ", redirecting to date selection page");
@@ -115,6 +104,117 @@ public class ReservationServlet extends HttpServlet {
                 System.out.println("Unknown POST path: " + pathInfo + ", redirecting to date selection page");
                 response.sendRedirect(request.getContextPath() + "/dateSelection.jsp");
                 break;
+        }
+    }
+
+    /**
+     * Handles the table selection page request.
+     * This method loads all available and reserved tables for the selected date and time.
+     */
+    private void handleTableSelectionRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // Get reservation date and time from session or request
+        HttpSession session = request.getSession();
+        String reservationDate = (String) session.getAttribute("reservationDate");
+        String reservationTime = (String) session.getAttribute("reservationTime");
+        String bookingType = (String) session.getAttribute("bookingType");
+        String reservationDuration = (String) session.getAttribute("reservationDuration");
+
+        System.out.println("Table selection requested for date=" + reservationDate + ", time=" + reservationTime);
+
+        if (reservationDate == null || reservationTime == null) {
+            // Try to get from request parameters
+            reservationDate = request.getParameter("reservationDate");
+            reservationTime = request.getParameter("reservationTime");
+            bookingType = request.getParameter("bookingType");
+            reservationDuration = request.getParameter("reservationDuration");
+
+            System.out.println("Using request parameters: date=" + reservationDate + ", time=" + reservationTime);
+        }
+
+        if (reservationDate == null || reservationTime == null) {
+            System.out.println("Missing date or time, redirecting to date selection page");
+            response.sendRedirect(request.getContextPath() + "/dateSelection.jsp");
+            return;
+        }
+
+        // Set defaults if not provided
+        if (bookingType == null) {
+            bookingType = "normal";
+        }
+
+        if (reservationDuration == null) {
+            reservationDuration = (bookingType.equals("special")) ? "3" : "2";
+        }
+
+        int duration;
+        try {
+            duration = Integer.parseInt(reservationDuration);
+        } catch (NumberFormatException e) {
+            duration = (bookingType.equals("special")) ? 3 : 2;
+        }
+
+        // Get all reserved tables for this date and time
+        List<String> reservedTables = null;
+        try {
+            reservedTables = reservationDAO.getReservedTables(reservationDate, reservationTime, duration);
+            System.out.println("Found " + reservedTables.size() + " reserved tables: " + reservedTables);
+        } catch (Exception e) {
+            System.err.println("Error getting reserved tables: " + e.getMessage());
+            e.printStackTrace();
+            reservedTables = new ArrayList<>();
+        }
+
+        // Store the data in session for use by the JSP
+        session.setAttribute("reservationDate", reservationDate);
+        session.setAttribute("reservationTime", reservationTime);
+        session.setAttribute("bookingType", bookingType);
+        session.setAttribute("reservationDuration", reservationDuration);
+        request.setAttribute("reservedTables", reservedTables);
+
+        System.out.println("Forwarding to table selection JSP");
+        request.getRequestDispatcher("/tableSelection.jsp").forward(request, response);
+    }
+
+    /**
+     * Handle AJAX request for getting reserved tables.
+     */
+    private void handleGetReservedTablesRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("application/json");
+
+        String date = request.getParameter("date");
+        String time = request.getParameter("time");
+        String durationStr = request.getParameter("duration");
+
+        if (date == null || time == null || durationStr == null) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getWriter().write("{\"error\": \"Missing parameters\"}");
+            return;
+        }
+
+        int duration;
+        try {
+            duration = Integer.parseInt(durationStr);
+        } catch (NumberFormatException e) {
+            duration = 2; // Default duration
+        }
+
+        try {
+            List<String> reservedTables = reservationDAO.getReservedTables(date, time, duration);
+
+            // Build JSON response
+            StringBuilder json = new StringBuilder("{\"reservedTables\":[");
+            for (int i = 0; i < reservedTables.size(); i++) {
+                json.append("\"").append(reservedTables.get(i)).append("\"");
+                if (i < reservedTables.size() - 1) {
+                    json.append(",");
+                }
+            }
+            json.append("]}");
+
+            response.getWriter().write(json.toString());
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
 
@@ -220,7 +320,7 @@ public class ReservationServlet extends HttpServlet {
             System.out.println("Redirecting to table selection page");
 
             // Redirect to table selection page
-            response.sendRedirect(request.getContextPath() + "/tableSelection.jsp");
+            response.sendRedirect(request.getContextPath() + "/reservation/tableSelection");
 
         } catch (DateTimeParseException e) {
             System.err.println("Date/time parsing error: " + e.getMessage());
@@ -339,34 +439,7 @@ public class ReservationServlet extends HttpServlet {
         System.out.println("Checking table availability: tableId=" + tableId + ", date=" + date +
                 ", startTime=" + startTime + ", duration=" + duration);
 
-        // Get all reservations for this table and date
-        List<Reservation> reservations = reservationDAO.findByTableAndDate(tableId, date);
-        System.out.println("Found " + reservations.size() + " existing reservations for this table and date");
-
-        // If no reservations, table is available
-        if (reservations.isEmpty()) {
-            System.out.println("No existing reservations, table is available");
-            return true;
-        }
-
-        LocalTime endTime = startTime.plusHours(duration);
-        System.out.println("Requested time slot: " + startTime + " to " + endTime);
-
-        // Check each reservation for time conflicts
-        for (Reservation reservation : reservations) {
-            LocalTime existingStart = LocalTime.parse(reservation.getReservationTime());
-            LocalTime existingEnd = existingStart.plusHours(reservation.getDuration());
-            System.out.println("Checking against existing reservation: " + existingStart + " to " + existingEnd);
-
-            // Check if the time slots overlap
-            if (startTime.isBefore(existingEnd) && existingStart.isBefore(endTime)) {
-                System.out.println("Conflict detected - table is not available");
-                return false;
-            }
-        }
-
-        System.out.println("No conflicts found - table is available");
-        return true;
+        return reservationDAO.isTableAvailable(tableId, date, startTime.toString(), duration);
     }
 
     /**
@@ -446,5 +519,15 @@ public class ReservationServlet extends HttpServlet {
         }
 
         return result;
+    }
+
+    /**
+     * Utility method to convert time to minutes for comparison
+     */
+    private int timeToMinutes(String timeStr) {
+        String[] parts = timeStr.split(":");
+        int hours = Integer.parseInt(parts[0]);
+        int minutes = Integer.parseInt(parts[1]);
+        return hours * 60 + minutes;
     }
 }
