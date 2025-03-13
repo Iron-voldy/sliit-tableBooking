@@ -63,6 +63,7 @@ public class FileHandler {
         Path target = Paths.get(filePath + "." + timestamp + ".bak");
 
         Files.copy(source, target);
+        System.out.println("Created backup at: " + target.toAbsolutePath());
     }
 
     /**
@@ -76,6 +77,7 @@ public class FileHandler {
         Path path = Paths.get(filePath);
         if (Files.exists(path)) {
             Files.delete(path);
+            System.out.println("Deleted file: " + path.toAbsolutePath());
             return true;
         }
         return false;

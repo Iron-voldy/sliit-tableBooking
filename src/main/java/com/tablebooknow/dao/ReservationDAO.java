@@ -32,6 +32,11 @@ public class ReservationDAO {
         // Fallback to user.dir/data if app.datapath is not set
         if (dataPath == null) {
             dataPath = System.getProperty("user.dir") + File.separator + "data";
+            // Ensure the directory exists
+            File dir = new File(dataPath);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
         }
 
         return dataPath + File.separator + fileName;
@@ -52,6 +57,9 @@ public class ReservationDAO {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH, true))) {
             writer.write(reservation.toCsvString());
             writer.newLine();
+        } catch (IOException e) {
+            System.err.println("Error writing to file: " + e.getMessage());
+            throw e;
         }
 
         return reservation;
@@ -71,9 +79,14 @@ public class ReservationDAO {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.trim().isEmpty()) {
-                    Reservation reservation = Reservation.fromCsvString(line);
-                    if (reservation.getId().equals(id)) {
-                        return reservation;
+                    try {
+                        Reservation reservation = Reservation.fromCsvString(line);
+                        if (reservation.getId().equals(id)) {
+                            return reservation;
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error parsing reservation line: " + line);
+                        // Continue to next line on error
                     }
                 }
             }
@@ -98,9 +111,14 @@ public class ReservationDAO {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.trim().isEmpty()) {
-                    Reservation reservation = Reservation.fromCsvString(line);
-                    if (reservation.getUserId().equals(userId)) {
-                        userReservations.add(reservation);
+                    try {
+                        Reservation reservation = Reservation.fromCsvString(line);
+                        if (reservation.getUserId().equals(userId)) {
+                            userReservations.add(reservation);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error parsing reservation line: " + line);
+                        // Continue to next line on error
                     }
                 }
             }
@@ -125,9 +143,14 @@ public class ReservationDAO {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.trim().isEmpty()) {
-                    Reservation reservation = Reservation.fromCsvString(line);
-                    if (reservation.getReservationDate().equals(date)) {
-                        dateReservations.add(reservation);
+                    try {
+                        Reservation reservation = Reservation.fromCsvString(line);
+                        if (reservation.getReservationDate().equals(date)) {
+                            dateReservations.add(reservation);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error parsing reservation line: " + line);
+                        // Continue to next line on error
                     }
                 }
             }
@@ -153,11 +176,16 @@ public class ReservationDAO {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.trim().isEmpty()) {
-                    Reservation reservation = Reservation.fromCsvString(line);
-                    if (reservation.getTableId().equals(tableId) &&
-                            reservation.getReservationDate().equals(date) &&
-                            !reservation.getStatus().equals("cancelled")) {
-                        tableReservations.add(reservation);
+                    try {
+                        Reservation reservation = Reservation.fromCsvString(line);
+                        if (reservation.getTableId().equals(tableId) &&
+                                reservation.getReservationDate().equals(date) &&
+                                !reservation.getStatus().equals("cancelled")) {
+                            tableReservations.add(reservation);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error parsing reservation line: " + line);
+                        // Continue to next line on error
                     }
                 }
             }
@@ -324,7 +352,12 @@ public class ReservationDAO {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (!line.trim().isEmpty()) {
-                    reservations.add(Reservation.fromCsvString(line));
+                    try {
+                        reservations.add(Reservation.fromCsvString(line));
+                    } catch (Exception e) {
+                        System.err.println("Error parsing reservation line: " + line);
+                        // Continue to next line on error
+                    }
                 }
             }
         }

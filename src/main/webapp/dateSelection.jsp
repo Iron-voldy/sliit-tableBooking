@@ -17,6 +17,10 @@
         }
 
         String username = (String) session.getAttribute("username");
+
+        // Debug info
+        System.out.println("User authenticated: " + username);
+        System.out.println("Context path: " + request.getContextPath());
     %>
 
     <div class="datetime-container">
@@ -25,6 +29,7 @@
             <p>Welcome, <%= username %>! Choose your preferred dining date and time</p>
         </div>
 
+        <!-- Important: Ensure the form action is correct and using direct form submission -->
         <form class="datetime-form" id="datetimeForm" action="${pageContext.request.contextPath}/reservation/createReservation" method="post">
             <div class="input-group">
                 <label class="input-label">Dining Date</label>
@@ -63,7 +68,9 @@
                 </select>
             </div>
 
-            <button type="submit" class="proceed-btn">Find Available Tables</button>
+            <!-- Let's add a simple submit button that bypasses JS validation for debugging -->
+            <button type="submit" class="proceed-btn" id="submitBtn">Find Available Tables</button>
+            <div id="debug-info" style="margin-top: 20px; color: white; font-size: 12px;"></div>
 
             <%
                 String errorMessage = (String) request.getAttribute("errorMessage");
@@ -77,6 +84,17 @@
     </div>
 
     <script>
+        // Add a debug helper function
+        function debugLog(message) {
+            console.log(message);
+            const debugElement = document.getElementById('debug-info');
+            if (debugElement) {
+                debugElement.innerHTML += message + '<br>';
+            }
+        }
+
+        debugLog('Page loaded. Context path: ${pageContext.request.contextPath}');
+
         // Toggle duration field based on booking type
         document.querySelectorAll('input[name="bookingType"]').forEach(radio => {
             radio.addEventListener('change', function() {
@@ -86,11 +104,39 @@
                 } else {
                     durationContainer.style.display = 'none';
                 }
+                debugLog('Booking type changed to: ' + this.value);
             });
         });
 
+        // Add direct form submission option
+        document.getElementById('submitBtn').addEventListener('click', function(e) {
+            debugLog('Submit button clicked');
+
+            const form = document.getElementById('datetimeForm');
+            const date = document.getElementById('reservationDate').value;
+            const time = document.getElementById('reservationTime').value;
+
+            debugLog('Date: ' + date + ', Time: ' + time);
+
+            if(!date || !time) {
+                debugLog('Missing date or time - adding fallback values');
+
+                // If values are missing, add defaults for debugging purposes
+                if(!date) document.getElementById('reservationDate').value = '<%= java.time.LocalDate.now() %>';
+                if(!time) document.getElementById('reservationTime').value = '12:00';
+
+                // Let the form submit naturally
+                return true;
+            }
+
+            debugLog('Form valid - submitting');
+            // Let the form submit naturally
+            return true;
+        });
+
+        // Modified form submission handling
         document.getElementById('datetimeForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+            debugLog('Form submit event triggered');
 
             const date = document.getElementById('reservationDate').value;
             const time = document.getElementById('reservationTime').value;
@@ -98,58 +144,38 @@
             const duration = bookingType === 'special' ?
                 document.getElementById('reservationDuration').value : '2';
 
-            // Basic form validation
-            if(!date || !time) {
-                showError('Please select both date and time');
-                return;
-            }
+            debugLog('Form data: date=' + date + ', time=' + time + ', type=' + bookingType + ', duration=' + duration);
 
-            // Current date in YYYY-MM-DD format
-            const today = new Date().toISOString().split('T')[0];
-
-            // Selected time in HH:MM format
-            const selectedTime = time;
-            const [hours, minutes] = selectedTime.split(':');
-
-            // Check if selected date is today
-            if(date === today) {
-                // Get current time
-                const now = new Date();
-                const currentHours = now.getHours();
-                const currentMinutes = now.getMinutes();
-
-                // Check if selected time is in the past
-                if(parseInt(hours) < currentHours || (parseInt(hours) === currentHours && parseInt(minutes) <= currentMinutes)) {
-                    showError('Please select a future time');
-                    return;
-                }
-            }
-
-            // Check restaurant closing time (10 PM / 22:00)
-            const selectedHour = parseInt(hours);
-            const selectedMinutes = parseInt(minutes);
-            const durationHours = parseInt(duration);
-
-            // Calculate end time
-            const endHour = selectedHour + durationHours;
-            const endMinutes = selectedMinutes;
-
-            if (endHour > 22 || (endHour === 22 && endMinutes > 0)) {
-                showError(`Your booking would end after our closing time (10:00 PM). Please select an earlier time or reduce duration.`);
-                return;
-            }
-
-            // If validation passes, store the values in session storage
+            // Store values in session storage for debugging
             sessionStorage.setItem('reservationDate', date);
             sessionStorage.setItem('reservationTime', time);
             sessionStorage.setItem('bookingType', bookingType);
             sessionStorage.setItem('reservationDuration', duration);
 
-            // Submit the form for server-side processing
-            this.submit();
+            debugLog('Data stored in sessionStorage');
+
+            // If we have all required fields, allow form submission
+            if(date && time) {
+                debugLog('Form is being submitted');
+                return true;
+            }
+
+            // Basic form validation
+            if(!date || !time) {
+                e.preventDefault();
+                showError('Please select both date and time');
+                debugLog('Form validation failed: missing date or time');
+                return false;
+            }
+
+            // Allow the form to submit
+            debugLog('Form validation passed');
+            return true;
         });
 
         function showError(message) {
+            debugLog('Error: ' + message);
+
             const errorDiv = document.createElement('div');
             errorDiv.style.color = '#ff4444';
             errorDiv.style.marginTop = '1rem';
@@ -167,6 +193,18 @@
         window.addEventListener('load', function() {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('reservationDate').setAttribute('min', today);
+            debugLog('Page fully loaded, min date set to: ' + today);
+
+            // Add default values for testing
+            if(!document.getElementById('reservationDate').value) {
+                document.getElementById('reservationDate').value = today;
+                debugLog('Default date set to today');
+            }
+
+            if(!document.getElementById('reservationTime').value) {
+                document.getElementById('reservationTime').value = '12:00';
+                debugLog('Default time set to 12:00');
+            }
         });
     </script>
 </body>

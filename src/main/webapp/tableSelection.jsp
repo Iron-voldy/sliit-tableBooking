@@ -7,327 +7,7 @@
     <title>Table Selection | Gourmet Reserve</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <style>
-      :root {
-        --dark-bg: #1a1a1a;
-        --table-color: #4a4a4a;
-        --reserved-color: #8B0000;
-        --hover-color: #3498db;
-        --gold: #D4AF37;
-      }
-
-      body {
-        margin: 0;
-        overflow: hidden;
-        font-family: 'Roboto', sans-serif;
-      }
-
-      #three-container {
-        width: 100%;
-        height: 100vh;
-        position: fixed;
-      }
-
-      .controls {
-        position: fixed;
-        top: 100px;
-        left: 20px;
-        z-index: 2;
-        background: rgba(26, 26, 26, 0.8);
-        padding: 15px;
-        border-radius: 10px;
-        backdrop-filter: blur(5px);
-        border: 1px solid rgba(212, 175, 55, 0.2);
-      }
-
-      .controls .btn {
-        background: linear-gradient(135deg, var(--gold), #800020);
-        border: none;
-        margin-right: 5px;
-      }
-
-      .reservation-info {
-        color: var(--gold);
-        margin-bottom: 15px;
-        font-family: 'Playfair Display', serif;
-      }
-
-      .floor-map {
-        position: fixed;
-        width: 80%;
-        height: 80%;
-        top: 10%;
-        left: 10%;
-        background: rgba(45, 45, 45, 0.95);
-        border-radius: 10px;
-        display: none;
-        z-index: 3;
-        padding: 20px;
-        overflow-y: auto;
-        color: #e0e0e0;
-      }
-
-      .table-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 20px;
-        padding: 20px;
-      }
-
-      .table-item {
-        background: var(--table-color);
-        border-radius: 8px;
-        padding: 15px;
-        text-align: center;
-        transition: all 0.3s;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      .table-item.reserved {
-        background: var(--reserved-color);
-        cursor: not-allowed;
-      }
-
-      .table-item:not(.reserved):hover {
-        transform: translateY(-5px);
-        box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
-        border: 1px solid var(--gold);
-      }
-
-      .chair {
-        width: 20px;
-        height: 20px;
-        background: #333;
-        border-radius: 3px;
-        display: inline-block;
-        margin: 2px;
-      }
-
-      /* Background overlay */
-      .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        z-index: 9998;
-      }
-
-      /* Modal container */
-      .booking-modal {
-        background: #2c2c2c;
-        color: #fff;
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 90%;
-        max-width: 600px;
-        padding: 2rem;
-        border-radius: 12px;
-        z-index: 9999;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-        display: none;
-        overflow-y: auto;
-        max-height: 90vh;
-      }
-
-      .modal-header {
-        text-align: center;
-        margin-bottom: 1.5rem;
-      }
-
-      .modal-header h2 {
-        font-size: 2rem;
-        color: #ffcc00;
-        margin-bottom: 0.5rem;
-        font-family: 'Playfair Display', serif;
-      }
-
-      .modal-header p {
-        color: #ccc;
-        font-size: 1rem;
-      }
-
-      .close-btn {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        background: #ff4d4d;
-        color: white;
-        border: none;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 1.2rem;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 0;
-      }
-
-      .close-btn:hover {
-        background: #e74c3c;
-      }
-
-      .header-nav {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        padding: 1.5rem 5%;
-        background: rgba(26, 26, 26, 0.95);
-        backdrop-filter: blur(10px);
-        z-index: 1000;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid rgba(212, 175, 55, 0.3);
-      }
-
-      .logo {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.8rem;
-        color: var(--gold);
-        text-decoration: none;
-      }
-
-      .nav-links {
-        display: flex;
-        gap: 2rem;
-      }
-
-      .nav-links a {
-        color: #e0e0e0;
-        text-decoration: none;
-        font-family: 'Roboto', sans-serif;
-        font-weight: 400;
-        transition: color 0.3s ease;
-      }
-
-      .nav-links a:hover {
-        color: var(--gold);
-      }
-
-      /* Form layout */
-      .form-group {
-        position: relative;
-        margin-bottom: 1.5rem;
-      }
-
-      .form-label {
-        display: block;
-        margin-bottom: 0.8rem;
-        color: #fff;
-        font-weight: 500;
-      }
-
-      .special-requests {
-        width: 100%;
-        height: 100px;
-        padding: 1rem;
-        background: #333;
-        border: 1px solid #555;
-        border-radius: 8px;
-        font-size: 1rem;
-        color: #fff;
-        resize: vertical;
-      }
-
-      .special-requests:focus {
-        outline: none;
-        border-color: var(--gold);
-      }
-
-      .submit-btn {
-        width: 100%;
-        padding: 1.2rem;
-        background: var(--gold);
-        border: none;
-        border-radius: 8px;
-        color: #333;
-        font-size: 1.1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: transform 0.3s ease;
-      }
-
-      .submit-btn:hover {
-        transform: translateY(-2px);
-        background: #e6b800;
-        box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
-      }
-
-      /* Reservation summary */
-      .reservation-summary {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        border: 1px solid rgba(212, 175, 55, 0.3);
-      }
-
-      .summary-item {
-        margin-bottom: 0.8rem;
-        font-size: 1.1rem;
-      }
-
-      .summary-item strong {
-        color: var(--gold);
-        margin-right: 0.5rem;
-      }
-
-      /* Error toast */
-      .error-toast {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(231, 76, 60, 0.9);
-        color: white;
-        padding: 15px 25px;
-        border-radius: 8px;
-        z-index: 1001;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        animation: fadeInUp 0.3s ease-out;
-        opacity: 1;
-        transition: opacity 0.5s ease;
-      }
-
-      @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translate(-50%, 20px);
-        }
-        to {
-            opacity: 1;
-            transform: translate(-50%, 0);
-        }
-      }
-
-      /* Responsive design */
-      @media (max-width: 768px) {
-        .floor-map {
-            width: 95%;
-            left: 2.5%;
-        }
-
-        .booking-modal {
-            width: 95%;
-            padding: 1.5rem;
-        }
-
-        .nav-links {
-            gap: 1rem;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/tableSelection.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
@@ -353,7 +33,7 @@
         }
 
         if (reservationDate == null || reservationTime == null) {
-            response.sendRedirect(request.getContextPath() + "/reservation/dateSelection.jsp");
+            response.sendRedirect(request.getContextPath() + "/dateSelection.jsp");
             return;
         }
 
@@ -364,7 +44,7 @@
     <nav class="header-nav">
         <a href="${pageContext.request.contextPath}/" class="logo">Gourmet Reserve</a>
         <div class="nav-links">
-            <a href="${pageContext.request.contextPath}/reservation">Reservations</a>
+            <a href="${pageContext.request.contextPath}/reservation/dateSelection">Reservations</a>
             <a href="${pageContext.request.contextPath}/user/profile.jsp">Profile</a>
             <a href="${pageContext.request.contextPath}/user/logout">Logout</a>
         </div>
@@ -529,6 +209,7 @@
             reservationQueue.enqueue(reservation);
         });
 
+        // Make sure this is defined at the top level of your script
         const floorConfig = {
             1: {
                 tables: [
@@ -548,6 +229,7 @@
 
         // Process the reservation queue and mark reserved tables
         function processReservations() {
+            console.log("Processing reservations");
             const currentReservation = {
                 time: reservationDetails.time,
                 duration: reservationDetails.duration
@@ -572,14 +254,22 @@
                                 return;
                             }
 
+                            // Initialize reserved array if it doesn't exist
+                            if (!tableType.reserved) {
+                                tableType.reserved = [];
+                            }
+
                             // Add to the reserved list if not already there
                             if (!tableType.reserved.includes(tableNumber)) {
                                 tableType.reserved.push(tableNumber);
+                                console.log(`Marked table ${reservation.tableId} as reserved`);
                             }
                         }
                     });
                 }
             });
+
+            console.log("Reservation processing complete");
         }
 
         // Process the reservations before initializing
@@ -616,22 +306,33 @@
             animate();
         }
 
+        // Replace your entire generateFloorView function with this
         function generateFloorView(floorNumber) {
-            const container = document.getElementById(`floor${floorNumber}-tables`);
+            console.log("Generating floor view for floor", floorNumber);
+
+            // This is the correct ID format - no dash between floor and number
+            const containerId = "floor" + floorNumber + "-tables";
+            console.log("Looking for container with ID:", containerId);
+
+            const container = document.getElementById(containerId);
 
             // Add a check to ensure the element exists
             if (!container) {
-                console.error(`Element with ID "floor${floorNumber}-tables" not found`);
+                console.error(`Element with ID "${containerId}" not found`);
+                // Debug output to see all floor-related IDs
+                const allElements = document.querySelectorAll('[id*="floor"]');
+                console.log("All floor-related elements:", Array.from(allElements).map(el => el.id));
                 return; // Exit the function if the element doesn't exist
             }
 
+            console.log("Found container:", container);
             container.innerHTML = "";
 
             floorConfig[floorNumber].tables.forEach((tableType) => {
                 for (let i = 0; i < tableType.count; i++) {
-                    const isReserved = tableType.reserved.includes(i);
+                    const isReserved = tableType.reserved && tableType.reserved.includes(i);
                     const tableItem = document.createElement("div");
-                    const tableId = tableType.id + (i + 1);
+                    const tableId = `${tableType.id}${i + 1}`;
 
                     tableItem.className = `table-item ${isReserved ? "reserved" : ""}`;
 
@@ -694,9 +395,10 @@
         }
 
         function handleReservation(type, number, floor, tableId) {
-            // Create a modal overlay to darken the background
+            // Create a modal overlay
             const overlay = document.createElement("div");
             overlay.classList.add("modal-overlay");
+            document.body.appendChild(overlay);
 
             // Format the time slot display
             const timeSlot = formatTimeSlot(reservationDetails.time, reservationDetails.duration);
@@ -705,8 +407,22 @@
             const modal = document.createElement("div");
             modal.classList.add("booking-modal");
 
-            // Generate modal content with vanilla JavaScript (no JSP/EL)
-            let modalContent = `
+            // Determine seat count based on table type
+            let seatCount = "2";
+            if (type === "family") {
+                seatCount = "6";
+            } else if (type === "luxury") {
+                seatCount = "10";
+            } else if (type === "regular") {
+                seatCount = "4";
+            }
+
+            // Get booking type description
+            const bookingTypeText = reservationDetails.bookingType == 'special' ?
+                                   'Special Booking' : 'Standard Booking';
+
+            // Generate modal content - avoid complex JSP EL expressions
+            modal.innerHTML = `
                 <div class="modal-header">
                     <h2>Confirm Your Reservation</h2>
                     <p>Experience fine dining at its best</p>
@@ -714,10 +430,120 @@
                 <button class="close-btn">×</button>
                 <form id="bookingForm" action="${pageContext.request.contextPath}/reservation/confirmReservation" method="post">
                     <input type="hidden" name="tableId" value="${tableId}">
-                    <input type="hidden" name="floorNumber" value="${floor}">
-                    <input type="hidden" name="bookingType" value="${reservationDetails.bookingType}">
-                    <input type="hidden" name="reservationDuration" value="${reservationDetails.duration}">
+                    <div class="reservation-summary">
+                        <div class="summary-item">
+                            <strong>Date:</strong> ${reservationDetails.date}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Time Slot:</strong> ${timeSlot}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Booking Type:</strong> ${bookingTypeText}
+                        </div>
+                        <div class="summary-item">
+                            <strong>Table:</strong> ${type.toUpperCase()} ${number} (Floor ${floor})
+                        </div>
+                        <div class="summary-item">
+                            <strong>Seats:</strong> ${seatCount}
+                        </div>
+                    </div>
 
+                    <div class="form-group">
+                        <label class="form-label">Special Requests</label>
+                        <textarea name="specialRequests" class="special-requests" placeholder="Dietary needs, accessibility requirements, etc..."></textarea>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Confirm Reservation</button>
+                </form>
+            `;
+
+            document.body.appendChild(modal);
+            modal.style.display = "block";
+
+            // Close button functionality
+            const closeButton = modal.querySelector(".close-btn");
+            closeButton.addEventListener("click", () => {
+                modal.remove();
+                overlay.remove();
+            });
+
+            // Close when clicking outside
+            overlay.addEventListener("click", () => {
+                modal.remove();
+                overlay.remove();
+            });
+        }
+
+        // Updated showFloor function
+        function showFloor(floorNumber) {
+            console.log("Showing floor", floorNumber, "Type:", typeof floorNumber);
+
+            rotateBuilding = false;
+            gsap.to(scene.rotation, { y: 0, duration: 0.5 });
+            gsap.to(scene.position, { x: -30, duration: 1 });
+
+            // The issue might be here - make sure floorNumber is a valid number
+            if (typeof floorNumber !== 'number') {
+                floorNumber = parseInt(floorNumber);
+            }
+
+            if (isNaN(floorNumber)) {
+                console.error("Invalid floor number:", floorNumber);
+                return;
+            }
+
+            console.log("Looking for floor map with ID: floor-" + floorNumber + "-map");
+
+            // Use string concatenation instead of template literals to avoid issues
+            const floorMapId = "floor-" + floorNumber + "-map";
+            const floorMap = document.getElementById(floorMapId);
+
+            if (!floorMap) {
+                console.error("Floor map element not found:", floorMapId);
+                return;
+            }
+
+            console.log("Found floor map element:", floorMap);
+            generateFloorView(floorNumber);
+
+            // Make sure the floor map is visible
+            floorMap.style.display = "block";
+            floorMap.style.opacity = "1";
+        }
+
+        // Updated handleReservation function
+        function handleReservation(type, number, floor, tableId) {
+            // Create a modal overlay to darken the background
+            const overlay = document.createElement("div");
+            overlay.classList.add("modal-overlay");
+            document.body.appendChild(overlay);
+
+            // Format the time slot display
+            const timeSlot = formatTimeSlot(reservationDetails.time, reservationDetails.duration);
+
+            // Create modal
+            const modal = document.createElement("div");
+            modal.classList.add("booking-modal");
+
+            // Determine seat count based on table type
+            let seatCount = "2"; // Default
+            if (type == "family") {
+                seatCount = "6";
+            } else if (type == "luxury") {
+                seatCount = "10";
+            } else if (type == "regular") {
+                seatCount = "4";
+            }
+
+            // Generate modal content
+            modal.innerHTML = `
+                <div class="modal-header">
+                    <h2>Confirm Your Reservation</h2>
+                    <p>Experience fine dining at its best</p>
+                </div>
+                <button class="close-btn">×</button>
+                <form id="bookingForm" action="${pageContext.request.contextPath}/reservation/confirmReservation" method="post">
+                    <input type="hidden" name="tableId" value="${tableId}">
                     <div class="reservation-summary">
                         <div class="summary-item">
                             <strong>Date:</strong> ${reservationDetails.date}
@@ -732,20 +558,7 @@
                             <strong>Table:</strong> ${type.toUpperCase()} ${number} (Floor ${floor})
                         </div>
                         <div class="summary-item">
-                            <strong>Seats:</strong> `;
-
-            // Determine seat count based on table type
-            if (type == "family") {
-                modalContent += "6";
-            } else if (type == "luxury") {
-                modalContent += "10";
-            } else if (type == "regular") {
-                modalContent += "4";
-            } else {
-                modalContent += "2";
-            }
-
-            modalContent += `
+                            <strong>Seats:</strong> ${seatCount}
                         </div>
                     </div>
 
@@ -758,71 +571,42 @@
                 </form>
             `;
 
-            modal.innerHTML = modalContent;
-
-            // Append the overlay and modal to the body
-            document.body.appendChild(overlay);
             document.body.appendChild(modal);
-
-            // Show the modal
             modal.style.display = "block";
-            overlay.style.display = "block";
 
-            // Close the modal when clicking the close button
+            // Close button functionality
             const closeButton = modal.querySelector(".close-btn");
             closeButton.addEventListener("click", () => {
                 modal.remove();
                 overlay.remove();
             });
 
-            // Close the modal when clicking outside of it
-            window.addEventListener("click", (event) => {
-                if (event.target == overlay) {
-                    modal.remove();
-                    overlay.remove();
-                }
+            // Close when clicking outside
+            overlay.addEventListener("click", () => {
+                modal.remove();
+                overlay.remove();
             });
-        }
-
-        function showFloor(floorNumber) {
-            // Add debug statement to see what floorNumber actually is
-            console.log("Floor number:", floorNumber, "Type:", typeof floorNumber);
-
-            rotateBuilding = false;
-            gsap.to(scene.rotation, { y: 0, duration: 0.5 });
-            gsap.to(scene.position, { x: -30, duration: 1 });
-
-            // Handle case where floorNumber might be empty or undefined
-            if (!floorNumber) {
-                console.error("Invalid floor number provided");
-                return;
-            }
-
-            // Make sure floorNumber is treated as a number
-            floorNumber = Number(floorNumber);
-
-            // Use the exact format that matches your HTML
-            const floorMap = document.getElementById(`floor-${floorNumber}-map`);
-
-
-            generateFloorView(floorNumber);
-            gsap.to(floorMap, { display: "block", opacity: 1, duration: 0.5 });
         }
 
         function closeFloorView() {
             gsap.to(scene.position, { x: 0, duration: 1 });
-            gsap.to(".floor-map", { opacity: 0, display: "none", duration: 0.5 });
+            document.querySelectorAll('.floor-map').forEach(map => {
+                map.style.opacity = "0";
+                setTimeout(() => {
+                    map.style.display = "none";
+                }, 500);
+            });
             rotateBuilding = true;
         }
 
-        // Event listeners
-        document
-            .getElementById("floor1")
-            .addEventListener("click", () => showFloor(1)); // Make sure 1 is being passed
+        // Event listeners - Making sure we're passing numeric values
+        document.getElementById("floor1").addEventListener("click", function() {
+            showFloor(1); // Explicitly pass 1 as a number
+        });
 
-        document
-            .getElementById("floor2")
-            .addEventListener("click", () => showFloor(2)); // Make sure 2 is being passed
+        document.getElementById("floor2").addEventListener("click", function() {
+            showFloor(2); // Explicitly pass 2 as a number
+        });
 
         window.addEventListener("resize", onWindowResize);
 
