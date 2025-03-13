@@ -63,6 +63,7 @@
     </div>
 
     <!-- Floor Maps -->
+
     <div class="floor-map" id="floor-1-map">
         <div class="d-flex justify-content-between mb-4">
             <h3>First Floor Layout</h3>
@@ -306,71 +307,477 @@
             animate();
         }
 
-        // Replace your entire generateFloorView function with this
-        function generateFloorView(floorNumber) {
-            console.log("Generating floor view for floor", floorNumber);
+        function showFloor(floorNumber) {
+            // Add specific debug to verify floorNumber value
+            console.log("showFloor called with floorNumber:", floorNumber);
 
-            // This is the correct ID format - no dash between floor and number
+            // Ensure floorNumber is a number
+            floorNumber = Number(floorNumber);
+
+            rotateBuilding = false;
+            gsap.to(scene.rotation, { y: 0, duration: 0.5 });
+            gsap.to(scene.position, { x: -30, duration: 1 });
+
+            // Use the correct ID format for the floor map
+            const floorMapId = `floor-${floorNumber}-map`;
+            const floorMap = document.getElementById(floorMapId);
+
+            if (!floorMap) {
+                console.error(`Floor map with ID "${floorMapId}" not found`);
+                return;
+            }
+
+            // Pass the floorNumber explicitly in the function call
+            generateFloorView(floorNumber);
+
+            // Make sure the display property is set before animating opacity
+            floorMap.style.display = "block";
+            gsap.to(floorMap, { opacity: 1, duration: 0.5 });
+        }
+
+        function generateFloorView(floorNumber) {
+            // Debug the received floorNumber
+            console.log("generateFloorView received floorNumber:", floorNumber);
+
+            // Ensure floorNumber is a number and not NaN
+            floorNumber = Number(floorNumber);
+
+            if (isNaN(floorNumber)) {
+                console.error("floorNumber is NaN!");
+                return;
+            }
+
+            // Now construct the container ID with the validated floorNumber
             const containerId = "floor" + floorNumber + "-tables";
+
             console.log("Looking for container with ID:", containerId);
 
             const container = document.getElementById(containerId);
 
-            // Add a check to ensure the element exists
+            // Check if container exists with proper debugging
             if (!container) {
                 console.error(`Element with ID "${containerId}" not found`);
-                // Debug output to see all floor-related IDs
-                const allElements = document.querySelectorAll('[id*="floor"]');
-                console.log("All floor-related elements:", Array.from(allElements).map(el => el.id));
-                return; // Exit the function if the element doesn't exist
+                return;
             }
 
-            console.log("Found container:", container);
+            console.log("Container found, proceeding with table generation");
+
+            // Clear the container before adding new elements
             container.innerHTML = "";
+
+            // Add custom styles for table display
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                .table-item {
+                    background: #333;
+                    border-radius: 12px;
+                    padding: 20px;
+                    text-align: center;
+                    transition: all 0.3s;
+                    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+                    border: 2px solid #555;
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .table-item:not(.reserved):hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+                    border-color: #D4AF37;
+                }
+
+                .table-item.reserved {
+                    background: #8B0000;
+                    border-color: #ff6666;
+                }
+
+                .table-header {
+                    margin-bottom: 15px;
+                    padding-bottom: 10px;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                }
+
+                .table-header .table-name {
+                    font-size: 1.2rem;
+                    font-weight: bold;
+                    color: #D4AF37;
+                    margin-bottom: 5px;
+                }
+
+                 .table-header {
+                        margin-top: 25px; /* Add space at the top to avoid overlap with status label */
+                        margin-bottom: 15px;
+                        padding-bottom: 10px;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                    }
+
+                 .status-label {
+                        position: absolute;
+                        top: 10px;
+                        right: 10px;
+                        padding: 5px 10px;
+                        border-radius: 15px;
+                        font-size: 0.8rem;
+                        font-weight: bold;
+                        z-index: 1; /* Ensure it's above other elements */
+                    }
+
+                .status-available {
+                    background: #28a745;
+                    color: white;
+                }
+
+                .status-reserved {
+                    background: #dc3545;
+                    color: white;
+                }
+
+                .table-content {
+                    margin-bottom: 15px;
+                }
+
+                .chairs-display {
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    margin: 15px 0;
+                }
+
+                .table-visual {
+                    position: relative;
+                    width: 120px;
+                    height: 90px;
+                    margin: 0 auto;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    margin-bottom: 20px;
+                }
+
+                .table-shape {
+                    width: 100%;
+                    height: 70%;
+                    background: #4a4a4a;
+                    border-radius: 8px;
+                    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    color: white;
+                    font-weight: bold;
+                }
+
+                .family-table {
+                    background: linear-gradient(135deg, #4a4a4a, #636363);
+                }
+
+                .regular-table {
+                    background: linear-gradient(135deg, #4a4a4a, #5a5a5a);
+                }
+
+                .couple-table {
+                    background: linear-gradient(135deg, #4a4a4a, #505050);
+                    width: 80%;
+                }
+
+                .luxury-table {
+                    background: linear-gradient(135deg, #4a4a4a, #6a6a6a);
+                    height: 80%;
+                }
+
+                .chair {
+                    width: 20px;
+                    height: 20px;
+                    background: #333;
+                    border: 2px solid #555;
+                    border-radius: 50%;
+                    position: absolute;
+                }
+
+                .chair-top {
+                    top: -10px;
+                }
+
+                .chair-bottom {
+                    bottom: -10px;
+                }
+
+                .chair-left {
+                    left: -10px;
+                }
+
+                .chair-right {
+                    right: -10px;
+                }
+
+                .table-details {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 15px;
+                    padding: 10px;
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 8px;
+                }
+
+                .detail-item {
+                    text-align: center;
+                }
+
+                .detail-label {
+                    font-size: 0.8rem;
+                    color: #bbb;
+                    margin-bottom: 3px;
+                }
+
+                .detail-value {
+                    font-size: 1rem;
+                    color: white;
+                    font-weight: bold;
+                }
+
+                .book-now-btn {
+                    width: 100%;
+                    padding: 10px;
+                    background: linear-gradient(135deg, #D4AF37, #AA8C2C);
+                    border: none;
+                    border-radius: 8px;
+                    color: white;
+                    font-weight: bold;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                }
+
+                .book-now-btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
+                }
+
+                .reserved-notice {
+                    width: 100%;
+                    padding: 10px;
+                    background: rgba(220, 53, 69, 0.2);
+                    border: 1px solid rgba(220, 53, 69, 0.5);
+                    border-radius: 8px;
+                    color: #ff6666;
+                    font-weight: bold;
+                }
+            `;
+            document.head.appendChild(styleElement);
+
+            // Check if floor config exists
+            if (!floorConfig[floorNumber] || !floorConfig[floorNumber].tables) {
+                console.error(`No configuration found for floor ${floorNumber}`);
+                return;
+            }
 
             floorConfig[floorNumber].tables.forEach((tableType) => {
                 for (let i = 0; i < tableType.count; i++) {
                     const isReserved = tableType.reserved && tableType.reserved.includes(i);
                     const tableItem = document.createElement("div");
-                    const tableId = `${tableType.id}${i + 1}`;
+                    const tableId = tableType.id + (i + 1);
 
                     tableItem.className = `table-item ${isReserved ? "reserved" : ""}`;
 
-                    // Generate chair divs with JavaScript
+                    // Determine pricing based on table type
+                    let price;
+                    switch(tableType.type) {
+                        case "family":
+                            price = "$120";
+                            break;
+                        case "luxury":
+                            price = "$180";
+                            break;
+                        case "regular":
+                            price = "$80";
+                            break;
+                        case "couple":
+                            price = "$60";
+                            break;
+                        default:
+                            price = "$100";
+                    }
+
+                    // Create table visual with appropriate number of chairs
                     let chairsHtml = '';
-                    for (let j = 0; j < tableType.chairs; j++) {
-                        chairsHtml += '<div class="chair"></div>';
-                    }
 
-                    // Generate reservation button or reserved label
-                    let statusHtml = '';
-                    if (!isReserved) {
-                        statusHtml = '<button class="btn btn-sm btn-primary mt-2">Book Now</button>';
+                    // Position chairs around table based on table type
+                    if (tableType.type === "family") {
+                        // 6 chairs for family tables
+                        chairsHtml +=
+                            '<div class="chair chair-top" style="left: 20px;"></div>' +
+                            '<div class="chair chair-top" style="left: 60px;"></div>' +
+                            '<div class="chair chair-left" style="top: 30px;"></div>' +
+                            '<div class="chair chair-right" style="top: 30px;"></div>' +
+                            '<div class="chair chair-bottom" style="left: 20px;"></div>' +
+                            '<div class="chair chair-bottom" style="left: 60px;"></div>';
+                    } else if (tableType.type === "luxury") {
+                        // 10 chairs for luxury tables
+                        chairsHtml +=
+                            '<div class="chair chair-top" style="left: 15px;"></div>' +
+                            '<div class="chair chair-top" style="left: 45px;"></div>' +
+                            '<div class="chair chair-top" style="left: 75px;"></div>' +
+                            '<div class="chair chair-left" style="top: 20px;"></div>' +
+                            '<div class="chair chair-left" style="top: 50px;"></div>' +
+                            '<div class="chair chair-right" style="top: 20px;"></div>' +
+                            '<div class="chair chair-right" style="top: 50px;"></div>' +
+                            '<div class="chair chair-bottom" style="left: 15px;"></div>' +
+                            '<div class="chair chair-bottom" style="left: 45px;"></div>' +
+                            '<div class="chair chair-bottom" style="left: 75px;"></div>';
+                    } else if (tableType.type === "regular") {
+                        // 4 chairs for regular tables
+                        chairsHtml +=
+                            '<div class="chair chair-top" style="left: 40px;"></div>' +
+                            '<div class="chair chair-right" style="top: 30px;"></div>' +
+                            '<div class="chair chair-bottom" style="left: 40px;"></div>' +
+                            '<div class="chair chair-left" style="top: 30px;"></div>';
                     } else {
-                        statusHtml = '<div class="text-warning mt-2">Reserved</div>';
+                        // 2 chairs for couple tables
+                        chairsHtml +=
+                            '<div class="chair chair-top" style="left: 40px;"></div>' +
+                            '<div class="chair chair-bottom" style="left: 40px;"></div>';
                     }
 
-                    tableItem.innerHTML = `
-                        <div class="fw-bold mb-2">${tableType.type.toUpperCase()} ${i + 1}</div>
-                        <div class="mb-2">${tableType.chairs} Seats</div>
-                        <div class="chairs-container">
-                            ${chairsHtml}
-                        </div>
-                        ${statusHtml}
-                    `;
+                    // Create the table HTML without using template literals (backticks)
+                    let tableInnerHTML =
+                        '<div class="status-label ' + (isReserved ? 'status-reserved' : 'status-available') + '">' +
+                            (isReserved ? 'Reserved' : 'Available') +
+                        '</div>' +
 
+                        '<div class="table-header">' +
+                            '<div class="table-name">' + tableType.type.toUpperCase() + ' ' + (i + 1) + '</div>' +
+                            '<div class="table-type">Floor ' + floorNumber + '</div>' +
+                        '</div>' +
+
+                        '<div class="table-visual">' +
+                            chairsHtml +
+                            '<div class="table-shape ' + tableType.type + '-table">' + tableType.chairs + ' seats</div>' +
+                        '</div>' +
+
+                        '<div class="table-details">' +
+                            '<div class="detail-item">' +
+                                '<div class="detail-label">Capacity</div>' +
+                                '<div class="detail-value">' + tableType.chairs + '</div>' +
+                            '</div>' +
+                            '<div class="detail-item">' +
+                                '<div class="detail-label">Type</div>' +
+                                '<div class="detail-value">' + tableType.type.charAt(0).toUpperCase() + tableType.type.slice(1) + '</div>' +
+                            '</div>' +
+                            '<div class="detail-item">' +
+                                '<div class="detail-label">Price</div>' +
+                                '<div class="detail-value">' + price + '</div>' +
+                            '</div>' +
+                        '</div>';
+
+                    // Add different content based on reservation status without using ternary operators with backticks
+                    if (isReserved) {
+                        tableInnerHTML += '<div class="reserved-notice">This table is currently reserved</div>';
+                    } else {
+                        tableInnerHTML += '<button class="book-now-btn">Book Now</button>';
+                    }
+
+                    // Set the table item HTML
+                    tableItem.innerHTML = tableInnerHTML;
+
+                    // Only add event listener if the table is not reserved
                     if (!isReserved) {
-                        tableItem
-                            .querySelector("button")
-                            .addEventListener("click", () => {
+                        const bookButton = tableItem.querySelector(".book-now-btn");
+                        if (bookButton) {
+                            bookButton.addEventListener("click", function() {
                                 handleReservation(tableType.type, i + 1, floorNumber, tableId);
                             });
+                        }
                     }
 
                     container.appendChild(tableItem);
+                    console.log('Added ' + tableType.type + ' table ' + (i+1) + ' to floor ' + floorNumber);
                 }
             });
         }
+
+        // Updated showFloor function to work with the correct element IDs
+        function showFloor(floorNumber) {
+            // Debug all floor-related elements in the document
+            console.log("All available floor elements:");
+            document.querySelectorAll('[id*="floor"]').forEach(el => {
+                console.log(el.id);
+            });
+
+            // Add specific debug to verify floorNumber value
+            console.log("showFloor called with floorNumber:", floorNumber);
+
+            // Ensure floorNumber is a number
+            floorNumber = Number(floorNumber);
+
+            if (isNaN(floorNumber)) {
+                console.error("Invalid floor number:", floorNumber);
+                return;
+            }
+
+            rotateBuilding = false;
+            gsap.to(scene.rotation, { y: 0, duration: 0.5 });
+            gsap.to(scene.position, { x: -30, duration: 1 });
+
+            // Use the correct ID format for the floor map
+            const floorMapId = `floor-${floorNumber}-map`;
+            const floorMap = document.getElementById(floorMapId);
+
+            console.log("Looking for floor map with ID:", floorMapId);
+
+            if (!floorMap) {
+                console.error(`Floor map with ID "${floorMapId}" not found`);
+                return;
+            }
+
+            console.log("Found floor map element:", floorMap);
+
+            // Pass the floorNumber explicitly in the function call
+            generateFloorView(floorNumber);
+
+            // Make sure the display property is set before animating opacity
+            floorMap.style.display = "block";
+            gsap.to(floorMap, { opacity: 1, duration: 0.5 });
+        }
+
+        // Check if floorConfig is defined and has the expected structure
+        console.log("Floor configuration:", floorConfig);
+
+        // Update the closeFloorView function for better animation control
+        function closeFloorView() {
+            gsap.to(scene.position, { x: 0, duration: 1 });
+
+            // Get all floor maps
+            const floorMaps = document.querySelectorAll(".floor-map");
+
+            floorMaps.forEach(map => {
+                gsap.to(map, {
+                    opacity: 0,
+                    duration: 0.5,
+                    onComplete: function() {
+                        map.style.display = "none";
+                    }
+                });
+            });
+
+            rotateBuilding = true;
+        }
+
+        // Ensure the event listeners are properly set up
+        document.addEventListener("DOMContentLoaded", function() {
+            const floor1Button = document.getElementById("floor1");
+            const floor2Button = document.getElementById("floor2");
+
+            if (floor1Button) {
+                floor1Button.addEventListener("click", function() {
+                    showFloor(1);
+                });
+            }
+
+            if (floor2Button) {
+                floor2Button.addEventListener("click", function() {
+                    showFloor(2);
+                });
+            }
+        });
 
         function formatTimeSlot(time, duration) {
             const [hours, minutes] = time.split(':');
