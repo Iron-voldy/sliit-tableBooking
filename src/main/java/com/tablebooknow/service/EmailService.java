@@ -5,10 +5,10 @@ import com.tablebooknow.model.reservation.Reservation;
 import com.tablebooknow.model.user.User;
 import com.tablebooknow.util.QRCodeGenerator;
 
-import javax.activation.DataHandler;
 import javax.mail.*;
 import javax.mail.internet.*;
 import javax.mail.util.ByteArrayDataSource;
+import javax.activation.DataHandler;
 import java.io.IOException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -57,29 +57,43 @@ public class EmailService {
 
     /**
      * Sends a confirmation email with QR code to the user after successful payment.
+     * This method now has improved error handling and will not throw exceptions.
      *
      * @param user The user who made the reservation
      * @param reservation The reservation details
      * @param payment The payment details
-     * @throws MessagingException If an error occurs during email sending
+     * @return true if email was sent successfully, false otherwise
      */
-    public static void sendConfirmationEmail(User user, Reservation reservation, Payment payment) throws MessagingException {
-        if (user.getEmail() == null || user.getEmail().isEmpty()) {
-            System.out.println("Cannot send email: User email is missing");
-            return;
+    public static boolean sendConfirmationEmail(User user, Reservation reservation, Payment payment) {
+        if (user == null || user.getEmail() == null || user.getEmail().isEmpty()) {
+            System.out.println("Cannot send email: User or email is missing");
+            return false;
         }
 
         try {
+            // Get mail session
             Session session = getMailSession();
-            Message message = new MimeMessage(session);
+
+            // Create message
+            MimeMessage message = new MimeMessage(session);
             message.setFrom(new InternetAddress(USERNAME));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(user.getEmail()));
             message.setSubject("Reservation Confirmation - Gourmet Reserve");
 
-            // Create QR code
+            // Create QR code content
             String qrCodeContent = QRCodeGenerator.createQRCodeContent(
                     reservation.getId(), payment.getId(), user.getId());
-            byte[] qrCodeBytes = QRCodeGenerator.generateQRCodeImage(qrCodeContent, 300, 300);
+
+            // Generate QR code image
+            byte[] qrCodeBytes;
+            try {
+                qrCodeBytes = QRCodeGenerator.generateQRCodeImage(qrCodeContent, 300, 300);
+            } catch (Exception e) {
+                System.err.println("Error generating QR code: " + e.getMessage());
+                e.printStackTrace();
+                // Create placeholder QR code - empty byte array
+                qrCodeBytes = new byte[0];
+            }
 
             // Create HTML content for the email
             String emailContent = createEmailContent(user, reservation, payment);
@@ -92,25 +106,39 @@ public class EmailService {
             textPart.setContent(emailContent, "text/html; charset=utf-8");
             multipart.addBodyPart(textPart);
 
-            // Add QR code as attachment
-            MimeBodyPart qrPart = new MimeBodyPart();
-            ByteArrayDataSource qrDataSource = new ByteArrayDataSource(qrCodeBytes, "image/png");
-            qrPart.setDataHandler(new DataHandler(qrDataSource));
-            qrPart.setHeader("Content-ID", "<qr-code>");
-            qrPart.setFileName("reservation_qr.png");
-            multipart.addBodyPart(qrPart);
+            // Only add QR code if we successfully generated it
+            if (qrCodeBytes.length > 0) {
+                try {
+                    // Add QR code as attachment
+                    MimeBodyPart qrPart = new MimeBodyPart();
+                    ByteArrayDataSource qrDataSource = new ByteArrayDataSource(qrCodeBytes, "image/png");
+                    qrPart.setDataHandler(new DataHandler(qrDataSource));
+                    qrPart.setHeader("Content-ID", "<qr-code>");
+                    qrPart.setFileName("reservation_qr.png");
+                    multipart.addBodyPart(qrPart);
+                } catch (Exception e) {
+                    System.err.println("Error attaching QR code: " + e.getMessage());
+                    e.printStackTrace();
+                    // Continue without QR code
+                }
+            }
 
             // Set content of the message
             message.setContent(multipart);
 
             // Send message
             Transport.send(message);
-            System.out.println("Confirmation email sent to: " + user.getEmail());
+            System.out.println("Confirmation email successfully sent to: " + user.getEmail());
+            return true;
 
-        } catch (MessagingException | IOException | com.google.zxing.WriterException e) {
-            System.err.println("Error sending confirmation email: " + e.getMessage());
+        } catch (MessagingException e) {
+            System.err.println("Error sending confirmation email (messaging exception): " + e.getMessage());
             e.printStackTrace();
-            throw new MessagingException("Failed to send confirmation email", e);
+            return false;
+        } catch (Exception e) {
+            System.err.println("Unexpected error sending confirmation email: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 

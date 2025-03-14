@@ -9,6 +9,7 @@ import com.tablebooknow.model.user.User;
 import com.tablebooknow.service.PaymentGateway;
 import com.tablebooknow.util.ReservationQueue;
 import java.util.Enumeration;
+import com.tablebooknow.service.EmailService;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -289,6 +290,8 @@ public class PaymentServlet extends HttpServlet {
 
 // Replace the handlePaymentSuccess method with this updated version:
 
+    // Modified handlePaymentSuccess method to handle email sending errors gracefully
+
     private void handlePaymentSuccess(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.println("Payment success callback received");
 
@@ -448,16 +451,21 @@ public class PaymentServlet extends HttpServlet {
             // Send confirmation email with QR code if payment was successful
             if (isValid && payment != null && reservation != null && user != null) {
                 try {
-                    // Send confirmation email with QR code
+                    // Try to send confirmation email with QR code
                     System.out.println("Sending confirmation email to user: " + user.getUsername());
-                    com.tablebooknow.service.EmailService.sendConfirmationEmail(user, reservation, payment);
+                    boolean emailSent = EmailService.sendConfirmationEmail(user, reservation, payment);
 
-                    // Add to confirmation message
-                    confirmationMessage += " A confirmation email with your QR code has been sent to your email address.";
+                    // Add to confirmation message based on email status
+                    if (emailSent) {
+                        confirmationMessage += " A confirmation email with your QR code has been sent to your email address.";
+                    } else {
+                        confirmationMessage += " We could not send a confirmation email at this time. Please check your reservation details in your account.";
+                    }
                 } catch (Exception e) {
                     System.err.println("Error sending confirmation email: " + e.getMessage());
                     e.printStackTrace();
                     // Don't fail the payment process if email sending fails
+                    confirmationMessage += " There was an issue sending your confirmation email. Your reservation is still confirmed.";
                 }
             }
         } catch (Exception e) {
@@ -476,7 +484,6 @@ public class PaymentServlet extends HttpServlet {
             request.getRequestDispatcher("/paymentSuccess.jsp").forward(request, response);
         }
     }
-
     /**
      * Handle cancelled payment from PayHere
      */
