@@ -1,5 +1,7 @@
 package com.tablebooknow.util;
 
+import java.util.Base64;
+
 /**
  * Utility class for generating placeholder QR code information.
  * This version doesn't use any external dependencies.
@@ -36,5 +38,21 @@ public class QRCodeGenerator {
         // Create a JSON-like string with the relevant information
         return String.format("{\"reservationId\":\"%s\",\"paymentId\":\"%s\",\"userId\":\"%s\",\"timestamp\":\"%s\"}",
                 reservationId, paymentId, userId, System.currentTimeMillis());
+    }
+
+    /**
+     * Creates a simulated Base64 QR code representation that can be used in HTML emails and pages.
+     * This doesn't actually generate a real QR code, just a placeholder.
+     *
+     * @param text The text to encode in the QR code
+     * @return A placeholder Base64 string that would represent a QR code image
+     */
+    public static String createQRCodeBase64(String text) {
+        // In a real implementation, this would generate a QR code and convert to base64
+        // Here we just create a placeholder string
+        System.out.println("Would generate Base64 QR code for: " + text);
+
+        // Return a placeholder that indicates this is a dummy
+        return "QR_CODE_PLACEHOLDER_" + Base64.getEncoder().encodeToString(text.getBytes());
     }
 }

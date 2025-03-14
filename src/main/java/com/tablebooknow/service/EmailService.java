@@ -3,6 +3,7 @@ package com.tablebooknow.service;
 import com.tablebooknow.model.payment.Payment;
 import com.tablebooknow.model.reservation.Reservation;
 import com.tablebooknow.model.user.User;
+import com.tablebooknow.util.QRCodeGenerator;
 
 /**
  * Service class for sending confirmation emails to users.
@@ -12,8 +13,7 @@ import com.tablebooknow.model.user.User;
 public class EmailService {
 
     /**
-     * Simulates sending a confirmation email to the user.
-     * This method doesn't actually send an email but logs what would be sent.
+     * Simulates sending a confirmation email to the user with QR code.
      *
      * @param user The user who made the reservation
      * @param reservation The reservation details
@@ -29,8 +29,18 @@ public class EmailService {
             System.out.println("EMAIL WOULD BE SENT TO: " + user.getEmail());
             System.out.println("SUBJECT: Reservation Confirmation - Gourmet Reserve");
 
-            // Create email content
-            String emailContent = createEmailContent(user, reservation, payment);
+            // Generate QR code content
+            String qrCodeContent = QRCodeGenerator.createQRCodeContent(
+                    reservation.getId(),
+                    payment.getId(),
+                    user.getId());
+
+            // In a real implementation, this would generate a QR code image
+            // and attach it to the email
+            System.out.println("QR CODE CONTENT: " + qrCodeContent);
+
+            // Create email content with QR code reference
+            String emailContent = createEmailContent(user, reservation, payment, qrCodeContent);
 
             // Log the first 200 characters of what would be sent
             System.out.println("EMAIL CONTENT PREVIEW: " +
@@ -42,7 +52,7 @@ public class EmailService {
             System.out.println("PAYMENT ID: " + payment.getId());
 
             // Log success message
-            System.out.println("Email would have been successfully sent to: " + user.getEmail());
+            System.out.println("Email with QR code would have been successfully sent to: " + user.getEmail());
         } catch (Exception e) {
             System.err.println("Error preparing email content: " + e.getMessage());
             e.printStackTrace();
@@ -50,14 +60,15 @@ public class EmailService {
     }
 
     /**
-     * Creates the HTML content for the confirmation email.
+     * Creates the HTML content for the confirmation email with QR code.
      *
      * @param user The user who made the reservation
      * @param reservation The reservation details
      * @param payment The payment details
+     * @param qrCodeContent Content for the QR code
      * @return HTML content as a string
      */
-    private static String createEmailContent(User user, Reservation reservation, Payment payment) {
+    private static String createEmailContent(User user, Reservation reservation, Payment payment, String qrCodeContent) {
         StringBuilder content = new StringBuilder();
         content.append("<html><head><style>");
         content.append("body { font-family: Arial, sans-serif; line-height: 1.6; }");
@@ -99,7 +110,17 @@ public class EmailService {
         content.append("</div>");
 
         content.append("<div>");
-        content.append("<p>Please show your reservation ID when you arrive at the restaurant.</p>");
+        content.append("<p>Please show your reservation ID or scan the QR code below when you arrive at the restaurant.</p>");
+
+        // QR Code placeholder
+        content.append("<div style='margin: 20px auto; padding: 15px; background-color: #f5f5f5; border-radius: 8px; width: 250px; text-align: center;'>");
+        content.append("<p>Your QR Code for check-in:</p>");
+        content.append("<div style='font-family: monospace; background-color: #fff; padding: 15px; width: 200px; height: 200px; margin: 0 auto; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center;'>");
+        content.append("<span style='font-weight: bold;'>QR</span>");
+        content.append("</div>");
+        content.append("<p style='font-size: 12px; margin-top: 10px;'>QR Content: ").append(qrCodeContent).append("</p>");
+        content.append("</div>");
+
         content.append("<div style='margin: 20px auto; padding: 15px; background-color: #f5f5f5; border-radius: 8px; width: 250px; text-align: center;'>");
         content.append("<span style='font-family: monospace; font-size: 18px; font-weight: bold; color: #000;'>").append(reservation.getId()).append("</span>");
         content.append("</div>");

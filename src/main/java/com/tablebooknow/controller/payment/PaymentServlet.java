@@ -9,6 +9,7 @@ import com.tablebooknow.model.user.User;
 import com.tablebooknow.service.PaymentGateway;
 import com.tablebooknow.util.ReservationQueue;
 import java.util.Enumeration;
+import com.tablebooknow.service.EmailService;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -446,16 +447,15 @@ public class PaymentServlet extends HttpServlet {
             // Send confirmation email if payment was successful
             if (isValid && payment != null && reservation != null && user != null) {
                 try {
-                    // No need to check for classes, our EmailService doesn't use JavaMail anymore
-                    System.out.println("Logging email details for user: " + user.getUsername() + " at email: " + user.getEmail());
+                    System.out.println("Sending confirmation email to user: " + user.getUsername() + " at email: " + user.getEmail());
 
-                    // This will just log the email details, not actually send it
-                    com.tablebooknow.service.EmailService.sendConfirmationEmail(user, reservation, payment);
+                    // This will log the email details with QR code, not actually send it
+                    EmailService.sendConfirmationEmail(user, reservation, payment);
 
                     // Add to confirmation message
-                    confirmationMessage += " Please keep your reservation ID for check-in.";
+                    confirmationMessage += " A confirmation email with your reservation details and QR code has been sent to your email address.";
                 } catch (Exception e) {
-                    System.err.println("Error logging email details: " + e.getMessage());
+                    System.err.println("Error sending confirmation email: " + e.getMessage());
                     e.printStackTrace();
                     confirmationMessage += " Please keep your reservation ID for check-in.";
                 }
@@ -468,8 +468,19 @@ public class PaymentServlet extends HttpServlet {
 
         if (isValid) {
             session.setAttribute("confirmationMessage", confirmationMessage);
+
+            // Store additional details for the confirmation page
+            if (reservation != null) {
+                session.setAttribute("tableId", reservation.getTableId());
+                // If these were already stored earlier, no need to set them again
+                session.setAttribute("reservationDate", reservation.getReservationDate());
+                session.setAttribute("reservationTime", reservation.getReservationTime());
+            }
+
             request.setAttribute("paymentSuccessful", true);
-            request.getRequestDispatcher("/paymentSuccess.jsp").forward(request, response);
+
+            // Redirect to new confirmation page
+            response.sendRedirect(request.getContextPath() + "/reservationConfirmation.jsp");
         } else {
             request.setAttribute("errorMessage", "We couldn't verify your payment. Please contact support.");
             request.setAttribute("paymentSuccessful", false);
