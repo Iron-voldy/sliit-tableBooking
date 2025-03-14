@@ -186,32 +186,6 @@
             margin-bottom: 1.5rem;
         }
 
-        .qr-code-placeholder {
-            width: 150px;
-            height: 190px;
-            margin: 0 auto 1.5rem;
-        }
-
-        .qr-code-inner {
-            width: 150px;
-            height: 150px;
-            background: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            font-size: 2rem;
-            color: #000;
-            margin-bottom: 10px;
-        }
-
-        .qr-code-placeholder p {
-            font-size: 0.9rem;
-            opacity: 0.8;
-            color: var(--text);
-        }
-
         .action-buttons {
             display: flex;
             justify-content: center;
@@ -290,84 +264,90 @@
 
         // Get error message if any
         String errorMessage = (String) request.getAttribute("errorMessage");
+
+        // Get reservation details
+        String restaurantName = (String) session.getAttribute("restaurantName");
+        String reservationDate = (String) session.getAttribute("reservationDate");
+        String reservationTime = (String) session.getAttribute("reservationTime");
+        String guestCount = (String) session.getAttribute("guestCount");
+        String amount = (String) session.getAttribute("amount");
+
+        if (restaurantName == null) restaurantName = "Gourmet Reserve Restaurant";
+        if (reservationDate == null) reservationDate = "Not available";
+        if (reservationTime == null) reservationTime = "Not available";
+        if (guestCount == null) guestCount = "Not available";
+        if (amount == null) amount = "Not available";
     %>
 
     <div class="container">
-        <% if (paymentSuccessful) { %>
-            <!-- Success state -->
-            <div class="status-circle success-circle">
+        <div class="header">
+            <h1>Payment <%= paymentSuccessful ? "Successful" : "Failed" %></h1>
+            <p>Reservation #<%= reservationId != null ? reservationId : "Unknown" %></p>
+        </div>
+
+        <div class="status-circle <%= paymentSuccessful ? "success-circle" : "error-circle" %>">
+            <% if (paymentSuccessful) { %>
                 <div class="checkmark"></div>
-            </div>
-
-            <div class="header">
-                <h1>Payment Successful!</h1>
-                <p>Your table reservation is now confirmed</p>
-            </div>
-        <% } else { %>
-            <!-- Error state -->
-            <div class="status-circle error-circle">
+            <% } else { %>
                 <div class="error-mark"></div>
-            </div>
+            <% } %>
+        </div>
 
-            <div class="header">
-                <h1>Payment Issue</h1>
-                <p>We encountered a problem with your payment</p>
-            </div>
-        <% } %>
+        <div class="message <%= paymentSuccessful ? "success-message" : "error-message" %>">
+            <p><%= confirmationMessage %></p>
+            <% if (errorMessage != null && !errorMessage.isEmpty()) { %>
+                <p class="error-message"><%= errorMessage %></p>
+            <% } %>
+        </div>
 
         <div class="payment-details">
+            <div class="detail-item">
+                <span class="detail-label">Restaurant:</span>
+                <span class="detail-value"><%= restaurantName %></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Date:</span>
+                <span class="detail-value"><%= reservationDate %></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Time:</span>
+                <span class="detail-value"><%= reservationTime %></span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Guests:</span>
+                <span class="detail-value"><%= guestCount %></span>
+            </div>
             <div class="detail-item">
                 <span class="detail-label">Payment ID:</span>
                 <span class="detail-value"><%= paymentId != null ? paymentId : "N/A" %></span>
             </div>
             <div class="detail-item">
-                <span class="detail-label">Reservation ID:</span>
-                <span class="detail-value"><%= reservationId != null ? reservationId : "N/A" %></span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Status:</span>
-                <span class="detail-value"><%= paymentSuccessful ? "Completed" : "Failed" %></span>
+                <span class="detail-label">Amount Paid:</span>
+                <span class="detail-value">$<%= amount %></span>
             </div>
         </div>
 
-        <p class="message <%= paymentSuccessful ? "success-message" : "error-message" %>">
-            <%= confirmationMessage %>
-        </p>
-
-        <% if (errorMessage != null) { %>
-            <p class="message error-message">
-                <%= errorMessage %>
-            </p>
-        <% } %>
-
         <% if (paymentSuccessful) { %>
-            <p class="instruction">A confirmation email has been sent to your registered email address with your reservation details and a QR code for check-in.</p>
-
-            <div class="qr-code-placeholder">
-                <div class="qr-code-inner">QR</div>
-                <p>Check your email for the QR code to scan when you arrive</p>
+            <div class="instruction">
+                <p>A confirmation email has been sent to your registered email address.</p>
+                <p>Please arrive 15 minutes before your reservation time.</p>
             </div>
-
-            <p style="color: #D4AF37; margin-bottom: 20px;">Please check your spam/junk folder if you don't see the confirmation email.</p>
+        <% } else { %>
+            <div class="instruction">
+                <p>Please try again or contact our support team for assistance.</p>
+                <p>Email: support@gourmetreserve.com</p>
+                <p>Phone: +1-800-GOURMET</p>
+            </div>
         <% } %>
 
         <div class="action-buttons">
+            <a href="${pageContext.request.contextPath}/dashboard.jsp" class="btn btn-primary">Back to Dashboard</a>
             <% if (paymentSuccessful) { %>
-                <a href="${pageContext.request.contextPath}/user/reservations" class="btn btn-secondary">View My Reservations</a>
-                <a href="${pageContext.request.contextPath}/" class="btn btn-primary">Return to Home</a>
+                <a href="${pageContext.request.contextPath}/viewReservation?id=<%= reservationId %>" class="btn btn-secondary">View Reservation</a>
             <% } else { %>
-                <a href="${pageContext.request.contextPath}/payment/initiate" class="btn btn-secondary">Try Again</a>
-                <a href="${pageContext.request.contextPath}/" class="btn btn-primary">Return to Home</a>
+                <a href="${pageContext.request.contextPath}/reservation.jsp" class="btn btn-secondary">Try Again</a>
             <% } %>
         </div>
     </div>
-
-    <script>
-        // Clear payment data from session after display
-        window.addEventListener('beforeunload', function() {
-            // We don't actually clear session data here anymore
-            // This is handled by the servlet
-        });
-    </script>
 </body>
 </html>

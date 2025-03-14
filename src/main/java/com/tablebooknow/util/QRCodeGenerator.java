@@ -1,56 +1,36 @@
 package com.tablebooknow.util;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.EncodeHintType;
-import com.google.zxing.MultiFormatWriter;
-import com.google.zxing.WriterException;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
- * Utility class for generating QR codes for reservation confirmations.
+ * Utility class for generating placeholder QR code information.
+ * This version doesn't use any external dependencies.
  */
 public class QRCodeGenerator {
 
     /**
-     * Generates a QR code image from the specified text.
+     * Returns a dummy byte array representing a QR code.
+     * This method doesn't actually generate a QR code image.
      *
-     * @param text The text to encode in the QR code
-     * @param width The width of the QR code image
-     * @param height The height of the QR code image
-     * @return A byte array containing the QR code image in PNG format
-     * @throws WriterException If an error occurs during QR code generation
-     * @throws IOException If an error occurs writing the image
+     * @param text The text that would be encoded in a real QR code
+     * @param width The width that would be used for a real QR code
+     * @param height The height that would be used for a real QR code
+     * @return A dummy byte array (would be the QR code image in a real implementation)
      */
-    public static byte[] generateQRCodeImage(String text, int width, int height) throws WriterException, IOException {
-        // Set up encoding parameters
-        Map<EncodeHintType, Object> hints = new HashMap<>();
-        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H); // High error correction
-        hints.put(EncodeHintType.MARGIN, 2); // Default margin
+    public static byte[] generateQRCodeImage(String text, int width, int height) {
+        // Log that we're not actually generating a QR code
+        System.out.println("QR Code would be generated for: " + text);
+        System.out.println("QR Code dimensions would be: " + width + "x" + height);
 
-        // Generate the QR code bit matrix
-        BitMatrix bitMatrix = new MultiFormatWriter().encode(text, BarcodeFormat.QR_CODE, width, height, hints);
-
-        // Convert to PNG image
-        ByteArrayOutputStream pngOutputStream = new ByteArrayOutputStream();
-        MatrixToImageWriter.writeToStream(bitMatrix, "PNG", pngOutputStream);
-
-        return pngOutputStream.toByteArray();
+        // Return a dummy byte array
+        return new byte[]{0, 1, 2, 3, 4, 5};
     }
 
     /**
-     * Creates a JSON-formatted string containing reservation information for the QR code.
+     * Creates a JSON-formatted string containing reservation information that would be used for a QR code.
      *
      * @param reservationId The reservation ID
      * @param paymentId The payment ID
      * @param userId The user ID
-     * @return A JSON-formatted string for encoding in the QR code
+     * @return A JSON-formatted string
      */
     public static String createQRCodeContent(String reservationId, String paymentId, String userId) {
         // Create a JSON-like string with the relevant information
