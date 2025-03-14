@@ -117,6 +117,12 @@
             return;
         }
 
+        // Store the order ID in the session for reference
+        String orderId = paymentParams.get("order_id");
+        if (orderId != null) {
+            session.setAttribute("paymentId", orderId);
+        }
+
         // For debugging - check simulation mode
         String simulatePayment = request.getParameter("simulatePayment");
         boolean isSimulation = "true".equals(simulatePayment);

@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Servlet for handling payment processing for table reservations
@@ -285,9 +287,9 @@ public class PaymentServlet extends HttpServlet {
         request.getRequestDispatcher("/payment.jsp").forward(request, response);
     }
 
-    /**
-     * Handle successful payment callback from PayHere
-     */
+    // In src/main/java/com/tablebooknow/controller/payment/PaymentServlet.java
+// Replace the handlePaymentSuccess method with this updated version:
+
     private void handlePaymentSuccess(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.println("Payment success callback received");
 
@@ -319,13 +321,14 @@ public class PaymentServlet extends HttpServlet {
         // Check for simulation mode
         boolean isSimulation = "true".equals(simulatePayment);
 
-        // Validate payment
-        boolean isValid = false;
-
-        // If payment callback doesn't include payment ID, use the one from session
+        // If we're missing orderId from the request, use the one from the session
         if (orderId == null && paymentId != null) {
             orderId = paymentId;
         }
+
+        // Validate payment
+        boolean isValid = false;
+        String confirmationMessage = "";
 
         try {
             if (isSimulation) {
@@ -362,6 +365,7 @@ public class PaymentServlet extends HttpServlet {
 
                             paymentDAO.create(payment);
                             paymentId = payment.getId();
+                            session.setAttribute("paymentId", paymentId);
 
                             // Update reservation status
                             reservation.setStatus("confirmed");
@@ -371,45 +375,80 @@ public class PaymentServlet extends HttpServlet {
                             reservationQueue.enqueue(reservation);
 
                             isValid = true;
+                            confirmationMessage = "Payment successful! Your table reservation is now confirmed.";
                         }
                     }
                 }
             } else if (orderId != null) {
                 // For real PayHere payment
-                Payment payment = paymentDAO.findById(orderId);
+                Payment payment = null;
+
+                // Try to find payment by orderId (which should match our payment ID)
+                try {
+                    payment = paymentDAO.findById(orderId);
+                } catch (Exception e) {
+                    System.err.println("Error finding payment by ID: " + e.getMessage());
+                }
+
+                // If not found, try using the reservationId to find associated payments
+                if (payment == null && reservationId != null) {
+                    try {
+                        List<Payment> payments = paymentDAO.findByReservationId(reservationId);
+                        if (!payments.isEmpty()) {
+                            payment = payments.get(0); // Use the first payment found
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error finding payment by reservation: " + e.getMessage());
+                    }
+                }
+
                 if (payment != null) {
-                    // Update payment status
+                    // Update payment status and store in session
                     payment.setStatus("COMPLETED");
-                    payment.setTransactionId(paymentGatewayId);
+                    if (paymentGatewayId != null) {
+                        payment.setTransactionId(paymentGatewayId);
+                    }
                     payment.setCompletedAt(LocalDateTime.now());
 
                     paymentDAO.update(payment);
 
-                    // Find the reservation
+                    // Store payment ID in session
+                    session.setAttribute("paymentId", payment.getId());
+
+                    // Find and update the reservation
                     Reservation reservation = reservationDAO.findById(payment.getReservationId());
                     if (reservation != null) {
                         // Update reservation status
                         reservation.setStatus("confirmed");
                         reservationDAO.update(reservation);
 
+                        // Update reservation ID in session if missing
+                        if (session.getAttribute("reservationId") == null) {
+                            session.setAttribute("reservationId", reservation.getId());
+                        }
+
                         // Add to reservation queue
                         reservationQueue.enqueue(reservation);
 
                         isValid = true;
+                        confirmationMessage = "Payment successful! Your table reservation is now confirmed.";
                     }
                 }
             }
         } catch (Exception e) {
             System.err.println("Error processing payment success: " + e.getMessage());
             e.printStackTrace();
+            confirmationMessage = "There was an issue processing your payment. Please contact support.";
         }
 
         if (isValid) {
-            session.setAttribute("confirmationMessage", "Payment successful! Your table reservation is now confirmed.");
-            response.sendRedirect(request.getContextPath() + "/confirmation.jsp");
+            session.setAttribute("confirmationMessage", confirmationMessage);
+            request.setAttribute("paymentSuccessful", true);
+            request.getRequestDispatcher("/paymentSuccess.jsp").forward(request, response);
         } else {
             request.setAttribute("errorMessage", "We couldn't verify your payment. Please contact support.");
-            request.getRequestDispatcher("/payment.jsp").forward(request, response);
+            request.setAttribute("paymentSuccessful", false);
+            request.getRequestDispatcher("/paymentSuccess.jsp").forward(request, response);
         }
     }
 

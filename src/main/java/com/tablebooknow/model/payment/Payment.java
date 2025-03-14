@@ -163,51 +163,88 @@ public class Payment implements Serializable {
      * Creates a Payment object from a CSV format string.
      */
     public static Payment fromCsvString(String csvLine) {
-        String[] parts = csvLine.split(",");
-        if (parts.length < 11) {
-            throw new IllegalArgumentException("Invalid CSV format for Payment");
-        }
-
-        BigDecimal amount = null;
-        if (parts[3] != null && !parts[3].isEmpty()) {
-            try {
-                amount = new BigDecimal(parts[3]);
-            } catch (NumberFormatException e) {
-                // Keep as null if not parseable
+        try {
+            String[] parts = csvLine.split(",");
+            if (parts.length < 10) {
+                throw new IllegalArgumentException("Invalid CSV format for Payment: expected at least 10 fields, got " + parts.length);
             }
-        }
 
-        LocalDateTime createdAt = null;
-        if (parts[9] != null && !parts[9].isEmpty()) {
-            try {
-                createdAt = LocalDateTime.parse(parts[9]);
-            } catch (Exception e) {
-                // Keep as null if not parseable
+            // Create a new payment with default values
+            Payment payment = new Payment();
+
+            // Set mandatory fields - careful with array indexing
+            payment.setId(parts[0].trim());
+
+            // Handle optional fields
+            if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                payment.setReservationId(parts[1].trim());
             }
-        }
 
-        LocalDateTime completedAt = null;
-        if (parts[10] != null && !parts[10].isEmpty()) {
-            try {
-                completedAt = LocalDateTime.parse(parts[10]);
-            } catch (Exception e) {
-                // Keep as null if not parseable
+            if (parts.length > 2 && !parts[2].trim().isEmpty()) {
+                payment.setUserId(parts[2].trim());
             }
-        }
 
-        return new Payment(
-                parts[0],                  // id
-                parts[1],                  // reservationId
-                parts[2],                  // userId
-                amount,                    // amount
-                parts[4],                  // currency
-                parts[5],                  // status
-                parts[6],                  // paymentMethod
-                parts[7],                  // transactionId
-                parts[8],                  // paymentGateway
-                createdAt,                 // createdAt
-                completedAt                // completedAt
-        );
+            // Handle amount
+            if (parts.length > 3 && !parts[3].trim().isEmpty()) {
+                try {
+                    payment.setAmount(new BigDecimal(parts[3].trim()));
+                } catch (NumberFormatException e) {
+                    System.err.println("Error parsing amount: " + parts[3]);
+                    // Use default value or set to zero
+                    payment.setAmount(BigDecimal.ZERO);
+                }
+            }
+
+            // Handle currency
+            if (parts.length > 4 && !parts[4].trim().isEmpty()) {
+                payment.setCurrency(parts[4].trim());
+            }
+
+            // Handle status
+            if (parts.length > 5 && !parts[5].trim().isEmpty()) {
+                payment.setStatus(parts[5].trim());
+            }
+
+            // Handle paymentMethod
+            if (parts.length > 6 && !parts[6].trim().isEmpty()) {
+                payment.setPaymentMethod(parts[6].trim());
+            }
+
+            // Handle transactionId
+            if (parts.length > 7 && !parts[7].trim().isEmpty()) {
+                payment.setTransactionId(parts[7].trim());
+            }
+
+            // Handle paymentGateway
+            if (parts.length > 8 && !parts[8].trim().isEmpty()) {
+                payment.setPaymentGateway(parts[8].trim());
+            }
+
+            // Handle createdAt
+            if (parts.length > 9 && !parts[9].trim().isEmpty()) {
+                try {
+                    payment.setCreatedAt(LocalDateTime.parse(parts[9].trim()));
+                } catch (Exception e) {
+                    System.err.println("Error parsing createdAt date: " + parts[9]);
+                    // Use current time as fallback
+                    payment.setCreatedAt(LocalDateTime.now());
+                }
+            }
+
+            // Handle completedAt (if available)
+            if (parts.length > 10 && !parts[10].trim().isEmpty()) {
+                try {
+                    payment.setCompletedAt(LocalDateTime.parse(parts[10].trim()));
+                } catch (Exception e) {
+                    System.err.println("Error parsing completedAt date: " + parts[10]);
+                    // Leave as null if can't parse
+                }
+            }
+
+            return payment;
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Error parsing payment CSV: " + e.getMessage(), e);
+        }
     }
 
     @Override

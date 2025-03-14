@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Successful | Gourmet Reserve</title>
+    <title>Payment Status | Gourmet Reserve</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -13,6 +13,7 @@
             --dark: #1a1a1a;
             --text: #e0e0e0;
             --success: #28a745;
+            --error: #dc3545;
         }
 
         * {
@@ -35,7 +36,7 @@
             background-position: center;
         }
 
-        .success-container {
+        .container {
             background: rgba(26, 26, 26, 0.95);
             padding: 3rem;
             border-radius: 20px;
@@ -52,17 +53,25 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .checkmark-circle {
+        .status-circle {
             width: 100px;
             height: 100px;
-            background: rgba(40, 167, 69, 0.1);
             border-radius: 50%;
-            border: 2px solid var(--success);
             margin: 0 auto 2rem;
             display: flex;
             justify-content: center;
             align-items: center;
             animation: scaleUp 0.5s ease-out forwards;
+        }
+
+        .success-circle {
+            background: rgba(40, 167, 69, 0.1);
+            border: 2px solid var(--success);
+        }
+
+        .error-circle {
+            background: rgba(220, 53, 69, 0.1);
+            border: 2px solid var(--error);
         }
 
         @keyframes scaleUp {
@@ -82,17 +91,41 @@
             transform-origin: center;
         }
 
+        .error-mark {
+            position: relative;
+            width: 60px;
+            height: 60px;
+        }
+
+        .error-mark:before, .error-mark:after {
+            content: "";
+            position: absolute;
+            width: 4px;
+            height: 60px;
+            background-color: var(--error);
+            top: 0;
+            left: 28px;
+        }
+
+        .error-mark:before {
+            transform: rotate(45deg);
+        }
+
+        .error-mark:after {
+            transform: rotate(-45deg);
+        }
+
         @keyframes checkmark {
             0% { width: 0; height: 0; opacity: 0; }
             50% { width: 0; height: 80px; opacity: 1; }
             100% { width: 40px; height: 80px; opacity: 1; }
         }
 
-        .success-header {
+        .header {
             margin-bottom: 2rem;
         }
 
-        .success-header h1 {
+        .header h1 {
             font-family: 'Playfair Display', serif;
             color: var(--gold);
             font-size: 2.5rem;
@@ -100,7 +133,7 @@
             letter-spacing: 1px;
         }
 
-        .success-header p {
+        .header p {
             color: var(--text);
             font-size: 1.2rem;
             opacity: 0.9;
@@ -132,6 +165,20 @@
         .detail-value {
             color: var(--gold);
             font-weight: 500;
+        }
+
+        .message {
+            margin-bottom: 2rem;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .success-message {
+            color: var(--success);
+        }
+
+        .error-message {
+            color: var(--error);
         }
 
         .action-buttons {
@@ -168,11 +215,11 @@
         }
 
         @media (max-width: 768px) {
-            .success-container {
+            .container {
                 padding: 2rem;
             }
 
-            .success-header h1 {
+            .header h1 {
                 font-size: 2rem;
             }
 
@@ -193,24 +240,49 @@
 
         String reservationId = (String) session.getAttribute("reservationId");
         String paymentId = (String) session.getAttribute("paymentId");
-        String paymentStatus = request.getParameter("status_code");
 
-        if (paymentStatus == null) {
-            paymentStatus = "2"; // Default to success
+        // Check if payment was successful
+        Boolean paymentSuccessful = (Boolean) request.getAttribute("paymentSuccessful");
+        if (paymentSuccessful == null) {
+            // If not set from servlet, try to determine from request parameters
+            String status = request.getParameter("status_code");
+            paymentSuccessful = "2".equals(status); // 2 is success status in PayHere
         }
 
-        boolean paymentSuccessful = "2".equals(paymentStatus); // 2 is success status in PayHere
+        // Get confirmation message
+        String confirmationMessage = (String) session.getAttribute("confirmationMessage");
+        if (confirmationMessage == null) {
+            confirmationMessage = paymentSuccessful
+                ? "Your payment was successful. Thank you for your reservation!"
+                : "There was an issue with your payment. Please contact support for assistance.";
+        }
+
+        // Get error message if any
+        String errorMessage = (String) request.getAttribute("errorMessage");
     %>
 
-    <div class="success-container">
-        <div class="checkmark-circle">
-            <div class="checkmark"></div>
-        </div>
+    <div class="container">
+        <% if (paymentSuccessful) { %>
+            <!-- Success state -->
+            <div class="status-circle success-circle">
+                <div class="checkmark"></div>
+            </div>
 
-        <div class="success-header">
-            <h1>Payment Successful!</h1>
-            <p>Your table reservation is now confirmed</p>
-        </div>
+            <div class="header">
+                <h1>Payment Successful!</h1>
+                <p>Your table reservation is now confirmed</p>
+            </div>
+        <% } else { %>
+            <!-- Error state -->
+            <div class="status-circle error-circle">
+                <div class="error-mark"></div>
+            </div>
+
+            <div class="header">
+                <h1>Payment Issue</h1>
+                <p>We encountered a problem with your payment</p>
+            </div>
+        <% } %>
 
         <div class="payment-details">
             <div class="detail-item">
@@ -223,25 +295,36 @@
             </div>
             <div class="detail-item">
                 <span class="detail-label">Status:</span>
-                <span class="detail-value">Completed</span>
+                <span class="detail-value"><%= paymentSuccessful ? "Completed" : "Failed" %></span>
             </div>
         </div>
 
-        <p>Thank you for your payment. Your table reservation has been confirmed. A confirmation email has been sent to your registered email address.</p>
+        <p class="message <%= paymentSuccessful ? "success-message" : "error-message" %>">
+            <%= confirmationMessage %>
+        </p>
+
+        <% if (errorMessage != null) { %>
+            <p class="message error-message">
+                <%= errorMessage %>
+            </p>
+        <% } %>
 
         <div class="action-buttons">
-            <a href="${pageContext.request.contextPath}/user/reservations" class="btn btn-secondary">View My Reservations</a>
-            <a href="${pageContext.request.contextPath}/" class="btn btn-primary">Return to Home</a>
+            <% if (paymentSuccessful) { %>
+                <a href="${pageContext.request.contextPath}/user/reservations" class="btn btn-secondary">View My Reservations</a>
+                <a href="${pageContext.request.contextPath}/" class="btn btn-primary">Return to Home</a>
+            <% } else { %>
+                <a href="${pageContext.request.contextPath}/payment/initiate" class="btn btn-secondary">Try Again</a>
+                <a href="${pageContext.request.contextPath}/" class="btn btn-primary">Return to Home</a>
+            <% } %>
         </div>
     </div>
 
     <script>
         // Clear payment data from session after display
         window.addEventListener('beforeunload', function() {
-            <%
-                // Clear the payment data
-                session.removeAttribute("paymentId");
-            %>
+            // We don't actually clear session data here anymore
+            // This is handled by the servlet
         });
     </script>
 </body>
