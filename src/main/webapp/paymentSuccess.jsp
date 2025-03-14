@@ -181,6 +181,37 @@
             color: var(--error);
         }
 
+        .instruction {
+            color: var(--text);
+            margin-bottom: 1.5rem;
+        }
+
+        .qr-code-placeholder {
+            width: 150px;
+            height: 190px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .qr-code-inner {
+            width: 150px;
+            height: 150px;
+            background: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 2rem;
+            color: #000;
+            margin-bottom: 10px;
+        }
+
+        .qr-code-placeholder p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            color: var(--text);
+        }
+
         .action-buttons {
             display: flex;
             justify-content: center;
@@ -307,6 +338,17 @@
             <p class="message error-message">
                 <%= errorMessage %>
             </p>
+        <% } %>
+
+        <% if (paymentSuccessful) { %>
+            <p class="instruction">A confirmation email has been sent to your registered email address with your reservation details and a QR code for check-in.</p>
+
+            <div class="qr-code-placeholder">
+                <div class="qr-code-inner">QR</div>
+                <p>Check your email for the QR code to scan when you arrive</p>
+            </div>
+
+            <p style="color: #D4AF37; margin-bottom: 20px;">Please check your spam/junk folder if you don't see the confirmation email.</p>
         <% } %>
 
         <div class="action-buttons">

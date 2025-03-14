@@ -287,7 +287,6 @@ public class PaymentServlet extends HttpServlet {
         request.getRequestDispatcher("/payment.jsp").forward(request, response);
     }
 
-    // In src/main/java/com/tablebooknow/controller/payment/PaymentServlet.java
 // Replace the handlePaymentSuccess method with this updated version:
 
     private void handlePaymentSuccess(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -296,6 +295,7 @@ public class PaymentServlet extends HttpServlet {
         HttpSession session = request.getSession();
         String paymentId = (String) session.getAttribute("paymentId");
         String reservationId = (String) session.getAttribute("reservationId");
+        String userId = (String) session.getAttribute("userId");
 
         String status = request.getParameter("status_code");
         String paymentGatewayId = request.getParameter("payment_id");
@@ -329,16 +329,19 @@ public class PaymentServlet extends HttpServlet {
         // Validate payment
         boolean isValid = false;
         String confirmationMessage = "";
+        Payment payment = null;
+        Reservation reservation = null;
+        User user = null;
 
         try {
             if (isSimulation) {
                 // For simulation, create a simulated payment record
                 if (reservationId != null) {
                     // Extract table type from reservation
-                    Reservation reservation = reservationDAO.findById(reservationId);
+                    reservation = reservationDAO.findById(reservationId);
                     if (reservation != null) {
-                        String userId = (String) session.getAttribute("userId");
-                        User user = userDAO.findById(userId);
+                        userId = (String) session.getAttribute("userId");
+                        user = userDAO.findById(userId);
 
                         if (user != null) {
                             // Create a simulated payment
@@ -353,7 +356,7 @@ public class PaymentServlet extends HttpServlet {
 
                             BigDecimal amount = paymentGateway.calculateAmount(tableType, reservation.getDuration());
 
-                            Payment payment = new Payment();
+                            payment = new Payment();
                             payment.setUserId(userId);
                             payment.setReservationId(reservationId);
                             payment.setAmount(amount);
@@ -367,8 +370,7 @@ public class PaymentServlet extends HttpServlet {
                             paymentId = payment.getId();
                             session.setAttribute("paymentId", paymentId);
 
-                            // Update reservation status to confirmed
-                            // IMPORTANT: This is the critical part that properly marks the reservation as confirmed
+                            // Update reservation status
                             reservation.setStatus("confirmed");
                             reservationDAO.update(reservation);
 
@@ -382,7 +384,7 @@ public class PaymentServlet extends HttpServlet {
                 }
             } else if (orderId != null) {
                 // For real PayHere payment
-                Payment payment = null;
+                payment = null;
 
                 // Try to find payment by orderId (which should match our payment ID)
                 try {
@@ -416,10 +418,16 @@ public class PaymentServlet extends HttpServlet {
                     // Store payment ID in session
                     session.setAttribute("paymentId", payment.getId());
 
+                    // Get the user information
+                    userId = payment.getUserId();
+                    if (userId != null) {
+                        user = userDAO.findById(userId);
+                    }
+
                     // Find and update the reservation
-                    Reservation reservation = reservationDAO.findById(payment.getReservationId());
+                    reservation = reservationDAO.findById(payment.getReservationId());
                     if (reservation != null) {
-                        // IMPORTANT: Update reservation status to confirmed when payment completes
+                        // Update reservation status
                         reservation.setStatus("confirmed");
                         reservationDAO.update(reservation);
 
@@ -434,6 +442,22 @@ public class PaymentServlet extends HttpServlet {
                         isValid = true;
                         confirmationMessage = "Payment successful! Your table reservation is now confirmed.";
                     }
+                }
+            }
+
+            // Send confirmation email with QR code if payment was successful
+            if (isValid && payment != null && reservation != null && user != null) {
+                try {
+                    // Send confirmation email with QR code
+                    System.out.println("Sending confirmation email to user: " + user.getUsername());
+                    com.tablebooknow.service.EmailService.sendConfirmationEmail(user, reservation, payment);
+
+                    // Add to confirmation message
+                    confirmationMessage += " A confirmation email with your QR code has been sent to your email address.";
+                } catch (Exception e) {
+                    System.err.println("Error sending confirmation email: " + e.getMessage());
+                    e.printStackTrace();
+                    // Don't fail the payment process if email sending fails
                 }
             }
         } catch (Exception e) {
