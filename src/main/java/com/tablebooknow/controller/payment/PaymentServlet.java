@@ -465,6 +465,24 @@ public class PaymentServlet extends HttpServlet {
                     session.setAttribute("qrCodeBase64", qrCodeBase64);
 
                     confirmationMessage += " Please keep your reservation QR code for check-in.";
+
+                    // Send confirmation email with QR code
+                    try {
+                        System.out.println("Attempting to send confirmation email to user: " + user.getEmail());
+                        boolean emailSent = EmailService.sendConfirmationEmail(user, reservation, payment);
+                        System.out.println("Email sending result: " + (emailSent ? "SUCCESS" : "FAILED"));
+
+                        if (emailSent) {
+                            confirmationMessage += " A confirmation email has been sent to your email address.";
+                        } else {
+                            System.err.println("Failed to send confirmation email to: " + user.getEmail());
+                            confirmationMessage += " We were unable to send a confirmation email. Please contact support if needed.";
+                        }
+                    } catch (Exception emailEx) {
+                        System.err.println("Exception sending confirmation email: " + emailEx.getMessage());
+                        emailEx.printStackTrace();
+                        confirmationMessage += " We encountered an issue sending your confirmation email.";
+                    }
                 } catch (Exception e) {
                     System.err.println("Error generating QR code: " + e.getMessage());
                     e.printStackTrace();

@@ -24,6 +24,7 @@ public class EmailService {
     private static final String SMTP_PORT = "587";
     private static final String EMAIL_USERNAME = "hoteltablereservation.sliit@gmail.com"; // Replace with your email
     private static final String EMAIL_PASSWORD = "zhuc luhf adtx bxas"; // Replace with your app password
+    private static final boolean EMAIL_DEBUG = true; // Enable debug mode to see SMTP communication
 
     // QR code configuration
     private static final int QR_CODE_SIZE = 250;
@@ -44,12 +45,15 @@ public class EmailService {
         }
 
         try {
-            // Set up mail properties
+            // Set up mail properties with enhanced settings for Gmail
             Properties properties = new Properties();
             properties.put("mail.smtp.auth", "true");
             properties.put("mail.smtp.starttls.enable", "true");
             properties.put("mail.smtp.host", SMTP_HOST);
             properties.put("mail.smtp.port", SMTP_PORT);
+            properties.put("mail.smtp.ssl.trust", SMTP_HOST);
+            properties.put("mail.smtp.ssl.protocols", "TLSv1.2");
+            properties.put("mail.debug", EMAIL_DEBUG);
 
             // Create session with authentication
             Session session = Session.getInstance(properties, new Authenticator() {
@@ -233,12 +237,21 @@ public class EmailService {
      */
     public static boolean sendTestEmail(String toEmail) {
         try {
-            // Set up mail properties
+            System.out.println("Attempting to send test email to: " + toEmail);
+
+            // Set up mail properties with enhanced settings for Gmail
             Properties properties = new Properties();
             properties.put("mail.smtp.auth", "true");
             properties.put("mail.smtp.starttls.enable", "true");
             properties.put("mail.smtp.host", SMTP_HOST);
             properties.put("mail.smtp.port", SMTP_PORT);
+            properties.put("mail.smtp.ssl.trust", SMTP_HOST);
+            properties.put("mail.smtp.ssl.protocols", "TLSv1.2");
+            properties.put("mail.debug", "true"); // Always enable debug for test emails
+
+            System.out.println("Email properties configured");
+            System.out.println("Using username: " + EMAIL_USERNAME);
+            System.out.println("SMTP host: " + SMTP_HOST + ", Port: " + SMTP_PORT);
 
             // Create session with authentication
             Session session = Session.getInstance(properties, new Authenticator() {
@@ -248,13 +261,17 @@ public class EmailService {
                 }
             });
 
+            System.out.println("Session created with authentication");
+
             // Create message
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(EMAIL_USERNAME, "Gourmet Reserve"));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
             message.setSubject("Test Email - Gourmet Reserve");
-            message.setText("This is a test email to verify that the email service is working properly.");
+            message.setText("This is a test email to verify that the email service is working properly. Time: " + new Date());
             message.setSentDate(new Date());
+
+            System.out.println("Message prepared, attempting to send...");
 
             // Send the message
             Transport.send(message);
@@ -264,7 +281,67 @@ public class EmailService {
         } catch (Exception e) {
             System.err.println("Error sending test email: " + e.getMessage());
             e.printStackTrace();
+
+            // Provide more detailed error information
+            if (e instanceof javax.mail.MessagingException) {
+                System.err.println("This is a JavaMail messaging exception, which typically indicates:");
+                System.err.println("1. Authentication issues (incorrect username/password)");
+                System.err.println("2. Connection issues (incorrect server/port)");
+                System.err.println("3. SSL/TLS configuration problems");
+
+                if (e.getMessage().contains("535")) {
+                    System.err.println("Error 535 indicates authentication failure. Check your username and app password.");
+                    System.err.println("Remember that for Gmail, you need to:");
+                    System.err.println("1. Enable 2-Step Verification on your Google account");
+                    System.err.println("2. Generate an App Password for this application");
+                    System.err.println("3. Use that App Password instead of your regular Google password");
+                }
+            }
+
             return false;
         }
+    }
+
+    /**
+     * Utility method to diagnose email configuration and test the connection
+     * This can be called directly from other parts of the application for debugging
+     */
+    public static void diagnoseEmailSetup() {
+        System.out.println("========== EMAIL DIAGNOSTICS ==========");
+        System.out.println("Email Username: " + EMAIL_USERNAME);
+        System.out.println("Email Password: " + (EMAIL_PASSWORD != null ? "[PROVIDED]" : "[NOT PROVIDED]"));
+        System.out.println("SMTP Host: " + SMTP_HOST);
+        System.out.println("SMTP Port: " + SMTP_PORT);
+
+        // Test the connection without sending an email
+        try {
+            Properties props = new Properties();
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.starttls.enable", "true");
+            props.put("mail.smtp.host", SMTP_HOST);
+            props.put("mail.smtp.port", SMTP_PORT);
+            props.put("mail.smtp.connectiontimeout", "5000");
+            props.put("mail.smtp.timeout", "5000");
+
+            System.out.println("Attempting to connect to SMTP server...");
+
+            Session session = Session.getInstance(props, new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(EMAIL_USERNAME, EMAIL_PASSWORD);
+                }
+            });
+
+            Transport transport = session.getTransport("smtp");
+            transport.connect(SMTP_HOST, Integer.parseInt(SMTP_PORT), EMAIL_USERNAME, EMAIL_PASSWORD);
+            transport.close();
+
+            System.out.println("SMTP Connection Successful! Authentication passed.");
+        } catch (Exception e) {
+            System.err.println("SMTP Connection Failed: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        System.out.println("======================================");
     }
 }

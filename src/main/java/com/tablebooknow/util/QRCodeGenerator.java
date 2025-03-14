@@ -1,36 +1,61 @@
 package com.tablebooknow.util;
 
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Utility class for generating placeholder QR code information.
- * This version doesn't use any external dependencies.
+ * Utility class for generating QR codes.
  */
 public class QRCodeGenerator {
 
     /**
-     * Returns a dummy byte array representing a QR code.
-     * This method doesn't actually generate a QR code image.
+     * Generates a QR code image as a byte array.
      *
-     * @param text The text that would be encoded in a real QR code
-     * @param width The width that would be used for a real QR code
-     * @param height The height that would be used for a real QR code
-     * @return A dummy byte array (would be the QR code image in a real implementation)
+     * @param text The text/data to encode in the QR code
+     * @param width The width of the QR code
+     * @param height The height of the QR code
+     * @return Byte array representing the QR code image
+     * @throws WriterException If there is an error during QR code generation
+     * @throws IOException If there is an I/O error
      */
-    public static byte[] generateQRCodeImage(String text, int width, int height) {
-        // Log that we're not actually generating a QR code
-        System.out.println("QR Code would be generated for: " + text);
-        System.out.println("QR Code dimensions would be: " + width + "x" + height);
+    public static byte[] generateQRCodeImage(String text, int width, int height) throws WriterException, IOException {
+        Map<EncodeHintType, Object> hints = new HashMap<>();
+        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+        hints.put(EncodeHintType.MARGIN, 1);
 
-        // Return a dummy byte array
-        return new byte[]{0, 1, 2, 3, 4, 5};
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, width, height, hints);
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream);
+
+        System.out.println("QR Code generated for: " + text);
+        System.out.println("QR Code dimensions: " + width + "x" + height);
+
+        return outputStream.toByteArray();
     }
 
     /**
-     * Creates a JSON-formatted string containing reservation information that would be used for a QR code.
+     * Creates a JSON-formatted string containing reservation information for a QR code.
      *
      * @param reservationId The reservation ID
      * @param paymentId The payment ID
@@ -44,81 +69,148 @@ public class QRCodeGenerator {
     }
 
     /**
-     * Creates a simulated Base64 QR code representation that can be used in HTML emails and pages.
-     * This doesn't actually generate a real QR code, just a placeholder.
+     * Creates a Base64 QR code representation that can be used in HTML emails and pages.
      *
      * @param text The text to encode in the QR code
-     * @return A placeholder Base64 string that would represent a QR code image
+     * @return A Base64 string representing the QR code image
+     * @throws WriterException If there is an error during QR code generation
+     * @throws IOException If there is an I/O error
      */
-    public static String createQRCodeBase64(String text) {
-        // In a real implementation, this would generate a QR code and convert to base64
-        // Here we just create a placeholder string
-        System.out.println("Would generate Base64 QR code for: " + text);
-
-        // Return a placeholder that indicates this is a dummy
-        return "QR_CODE_PLACEHOLDER_" + Base64.getEncoder().encodeToString(text.getBytes());
+    public static String createQRCodeBase64(String text) throws WriterException, IOException {
+        return createQRCodeBase64(text, 200, 200);
     }
 
     /**
-     * Creates a simulated Base64 QR code representation with specified dimensions.
-     * This doesn't actually generate a real QR code, just a placeholder.
+     * Creates a Base64 QR code representation with specified dimensions.
      *
      * @param text The text to encode in the QR code
      * @param width The width of the QR code
      * @param height The height of the QR code
-     * @return A placeholder Base64 string that would represent a QR code image
+     * @return A Base64 string representing the QR code image
+     * @throws WriterException If there is an error during QR code generation
+     * @throws IOException If there is an I/O error
      */
-    public static String createQRCodeBase64(String text, int width, int height) {
-        // Log dimensions in addition to content
-        System.out.println("Would generate Base64 QR code for: " + text);
-        System.out.println("QR Code dimensions would be: " + width + "x" + height);
-
-        // In a real implementation, this would generate a QR code with the specified dimensions
-        // and convert it to base64. Here we just create a placeholder string.
-        return "QR_CODE_PLACEHOLDER_" + width + "x" + height + "_" +
-                Base64.getEncoder().encodeToString(text.getBytes());
+    public static String createQRCodeBase64(String text, int width, int height) throws WriterException, IOException {
+        byte[] qrCodeBytes = generateQRCodeImage(text, width, height);
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(qrCodeBytes);
     }
 
     /**
-     * Saves a QR code to a file.
-     * This implementation is a simplified version that creates a dummy file to satisfy the interface.
-     * In a real implementation, this would use a proper QR code generation library like ZXing.
+     * Saves a QR code image to a file.
      *
-     * @param content The content to encode in the QR code
-     * @param filePath The path where the file should be saved
+     * @param text The text to encode in the QR code
+     * @param filePath The path where the QR code image should be saved
      * @param width The width of the QR code
      * @param height The height of the QR code
-     * @return true if the file was successfully created, false otherwise
+     * @throws WriterException If there is an error during QR code generation
+     * @throws IOException If there is an I/O error
      */
-    public static boolean saveQRCodeToFile(String content, String filePath, int width, int height) {
+    public static void saveQRCodeImage(String text, String filePath, int width, int height) throws WriterException, IOException {
+        Map<EncodeHintType, Object> hints = new HashMap<>();
+        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+        hints.put(EncodeHintType.MARGIN, 1);
+
+        BitMatrix bitMatrix = new MultiFormatWriter().encode(text, BarcodeFormat.QR_CODE, width, height, hints);
+        Path path = FileSystems.getDefault().getPath(filePath);
+        MatrixToImageWriter.writeToPath(bitMatrix, "PNG", path);
+
+        System.out.println("QR Code saved to: " + filePath);
+    }
+
+    /**
+     * Generates a BufferedImage from a QR code.
+     *
+     * @param text The text to encode in the QR code
+     * @param width The width of the QR code
+     * @param height The height of the QR code
+     * @return A BufferedImage containing the QR code
+     * @throws WriterException If there is an error during QR code generation
+     * @throws IOException If there is an I/O error
+     */
+    public static BufferedImage generateQRCodeImage2(String text, int width, int height) throws WriterException, IOException {
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, width, height);
+        return MatrixToImageWriter.toBufferedImage(bitMatrix);
+    }
+
+    /**
+     * Saves a QR code to a file using the BufferedImage approach with default PNG format.
+     *
+     * @param text The text to encode in the QR code
+     * @param filePath The path where the QR code image should be saved
+     * @param width The width of the QR code
+     * @param height The height of the QR code
+     * @return true if successful, false otherwise
+     * @throws WriterException If there is an error during QR code generation
+     * @throws IOException If there is an I/O error
+     */
+    public static boolean saveQRCodeToFile(String text, String filePath, int width, int height)
+            throws WriterException, IOException {
         try {
-            // Log that we're not actually generating a real QR code
-            System.out.println("QR Code would be generated and saved for: " + content);
-            System.out.println("QR Code dimensions would be: " + width + "x" + height);
-            System.out.println("QR Code would be saved to: " + filePath);
+            BufferedImage image = generateQRCodeImage2(text, width, height);
+            File qrFile = new File(filePath);
+            ImageIO.write(image, "PNG", qrFile);
 
-            // Create a dummy file with minimal content to satisfy the interface
-            File file = new File(filePath);
-
-            // Ensure parent directories exist
-            File parentDir = file.getParentFile();
-            if (parentDir != null && !parentDir.exists()) {
-                parentDir.mkdirs();
-            }
-
-            // Write a simple placeholder file
-            try (FileOutputStream fos = new FileOutputStream(file)) {
-                // In a real implementation, this would be the actual QR code image
-                // For now, we'll just write a simple placeholder
-                byte[] dummyContent = generateQRCodeImage(content, width, height);
-                fos.write(dummyContent);
-            }
-
+            System.out.println("QR Code saved to file: " + filePath);
             return true;
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.err.println("Error saving QR code to file: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
+    }
+
+    /**
+     * Saves a QR code to a file using the BufferedImage approach with specific format.
+     *
+     * @param text The text to encode in the QR code
+     * @param filePath The path where the QR code image should be saved
+     * @param width The width of the QR code
+     * @param height The height of the QR code
+     * @param imageFormat The image format (e.g., "PNG", "JPEG")
+     * @return true if successful, false otherwise
+     * @throws WriterException If there is an error during QR code generation
+     * @throws IOException If there is an I/O error
+     */
+    public static boolean saveQRCodeToFile(String text, String filePath, int width, int height, String imageFormat)
+            throws WriterException, IOException {
+        try {
+            BufferedImage image = generateQRCodeImage2(text, width, height);
+            File qrFile = new File(filePath);
+            ImageIO.write(image, imageFormat, qrFile);
+
+            System.out.println("QR Code saved to file: " + filePath);
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error saving QR code to file: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Generates a QR code and writes it directly to a FileOutputStream.
+     *
+     * @param text The text to encode in the QR code
+     * @param outputStream The output stream to write the QR code to
+     * @param width The width of the QR code
+     * @param height The height of the QR code
+     * @throws WriterException If there is an error during QR code generation
+     * @throws IOException If there is an I/O error
+     */
+    public static void generateQRCodeToStream(String text, FileOutputStream outputStream, int width, int height)
+            throws WriterException, IOException {
+        Map<EncodeHintType, Object> hints = new HashMap<>();
+        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.H);
+        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+        hints.put(EncodeHintType.MARGIN, 1);
+
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        BitMatrix bitMatrix = qrCodeWriter.encode(text, BarcodeFormat.QR_CODE, width, height, hints);
+
+        MatrixToImageWriter.writeToStream(bitMatrix, "PNG", outputStream);
+
+        System.out.println("QR Code written to output stream");
     }
 }
