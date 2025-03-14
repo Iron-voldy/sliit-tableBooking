@@ -340,6 +340,9 @@ public class ReservationServlet extends HttpServlet {
         }
     }
 
+    // In src/main/java/com/tablebooknow/controller/reservation/ReservationServlet.java
+// Modify the confirmReservation method to redirect directly to payment instead of confirmation
+
     private void confirmReservation(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.println("Confirming reservation");
         HttpSession session = request.getSession();
@@ -397,7 +400,7 @@ public class ReservationServlet extends HttpServlet {
             reservation.setTableId(tableId);
             reservation.setBookingType(bookingType);
             reservation.setSpecialRequests(specialRequests);
-            reservation.setStatus("confirmed");
+            reservation.setStatus("pending"); // Change status to pending until payment
 
             // Save the reservation
             System.out.println("Saving reservation with ID: " + reservation.getId());
@@ -408,24 +411,24 @@ public class ReservationServlet extends HttpServlet {
             reservationQueue.enqueue(reservation);
             System.out.println("Added reservation to queue");
 
-            // Clear the session attributes related to the current reservation process
+            // Clear the session attributes related to the reservation form
             session.removeAttribute("reservationDate");
             session.removeAttribute("reservationTime");
             session.removeAttribute("bookingType");
             session.removeAttribute("reservationDuration");
             System.out.println("Cleared session attributes");
 
-            // Set confirmation message and redirect to confirmation page
-            session.setAttribute("confirmationMessage", "Your reservation has been confirmed!");
+            // Set reservation ID in session for payment process
             session.setAttribute("reservationId", reservation.getId());
-            System.out.println("Set confirmation message and reservation ID: " + reservation.getId());
+            System.out.println("Set reservation ID in session: " + reservation.getId());
 
             // Process the queue using merge sort to order reservations
             processReservationQueue();
             System.out.println("Processed reservation queue");
 
-            System.out.println("Redirecting to confirmation page");
-            response.sendRedirect(request.getContextPath() + "/confirmation.jsp");
+            // Redirect directly to payment initiation instead of confirmation
+            System.out.println("Redirecting to payment initiation");
+            response.sendRedirect(request.getContextPath() + "/payment/initiate");
 
         } catch (Exception e) {
             System.err.println("Error creating reservation: " + e.getMessage());

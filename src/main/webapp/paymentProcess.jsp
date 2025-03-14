@@ -85,6 +85,19 @@
         .hidden-form {
             display: none;
         }
+
+        .debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 5px;
+            font-size: 12px;
+            color: #aaa;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -103,6 +116,10 @@
             response.sendRedirect(request.getContextPath() + "/payment.jsp");
             return;
         }
+
+        // For debugging - check simulation mode
+        String simulatePayment = request.getParameter("simulatePayment");
+        boolean isSimulation = "true".equals(simulatePayment);
     %>
 
     <div class="loader-container">
@@ -110,20 +127,54 @@
         <p class="loader-text">Please wait while we redirect you to our secure payment gateway...</p>
         <div class="spinner"></div>
 
+        <% if (isSimulation) { %>
+            <p style="color: #ff9900; margin-bottom: 20px;">Using development simulation mode</p>
+        <% } %>
+
         <!-- Hidden form for submitting to PayHere -->
         <form id="paymentForm" action="<%= checkoutUrl %>" method="post" class="hidden-form">
             <% for (Map.Entry<String, String> entry : paymentParams.entrySet()) { %>
                 <input type="hidden" name="<%= entry.getKey() %>" value="<%= entry.getValue() %>">
             <% } %>
+            <!-- Add a hidden field to indicate if this is a simulation -->
+            <% if (isSimulation) { %>
+                <input type="hidden" name="simulatePayment" value="true">
+            <% } %>
         </form>
+
+        <!-- Debug information - only visible with debug parameter -->
+        <%
+            String debug = request.getParameter("debug");
+            if ("true".equals(debug)) {
+        %>
+        <div class="debug-info" style="display: block;">
+            <h3>Debug Information:</h3>
+            <p>Checkout URL: <%= checkoutUrl %></p>
+            <p>Payment Parameters:</p>
+            <ul>
+                <% for (Map.Entry<String, String> entry : paymentParams.entrySet()) { %>
+                    <li><strong><%= entry.getKey() %>:</strong> <%= entry.getValue() %></li>
+                <% } %>
+            </ul>
+        </div>
+        <% } %>
     </div>
 
     <script>
         // Auto-submit the form after a short delay
         document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() {
-                document.getElementById('paymentForm').submit();
-            }, 1500);
+            <% if (isSimulation) { %>
+                // For simulation mode, redirect to simulated payment success
+                setTimeout(function() {
+                    window.location.href = "${pageContext.request.contextPath}/payment/success?simulatePayment=true&status_code=2&order_id=" +
+                        "<%= paymentParams.get("order_id") %>";
+                }, 1500);
+            <% } else { %>
+                // For real PayHere integration
+                setTimeout(function() {
+                    document.getElementById('paymentForm').submit();
+                }, 1500);
+            <% } %>
         });
     </script>
 </body>

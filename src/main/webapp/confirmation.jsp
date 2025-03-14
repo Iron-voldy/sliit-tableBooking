@@ -59,15 +59,6 @@
         </div>
     </div>
 
-    <script>
-        // Clear reservation data from session after display
-        window.addEventListener('beforeunload', function() {
-            <%
-                // Clear the confirmation data
-                session.removeAttribute("confirmationMessage");
-                session.removeAttribute("reservationId");
-            %>
-        });
-    </script>
+    <!-- Removed the problematic session clearing script -->
 </body>
 </html>

@@ -20,12 +20,12 @@ public class PaymentGateway {
     private static final String SANDBOX_URL = "https://sandbox.payhere.lk/pay/checkout";
     private static final String PRODUCTION_URL = "https://www.payhere.lk/pay/checkout";
 
-    // Change these to your actual merchant details
-    private static final String MERCHANT_ID = "1221688";  // Replace with your actual merchant ID
-    private static final String MERCHANT_SECRET = "MjczNTg5MTc4MzE0MDk5NjE2ODE0MTQ0NjQxNTQ2MTI4NjI5ODE="; // Replace with your actual secret
-    private static final boolean USE_SANDBOX = true; // Set to false for production
+    // PayHere merchant details - REPLACE WITH YOUR ACTUAL SANDBOX CREDENTIALS
+    private static final String MERCHANT_ID = "1221688";  // Replace with your actual sandbox merchant ID
+    private static final String MERCHANT_SECRET = "NDEwMjkxMjMxNTMxODkxNzQzNjMyNTI5MjgxMDkzMzgwMjY4MjY0MQ=="; // Replace with your actual sandbox secret
+    private static final boolean USE_SANDBOX = true; // Set to true for sandbox, false for production
 
-    // Table pricing based on table type (can be moved to configuration file)
+    // Table pricing based on table type
     private static final Map<String, BigDecimal> TABLE_PRICES = new HashMap<>();
     static {
         TABLE_PRICES.put("family", new BigDecimal("120.00"));
@@ -73,7 +73,7 @@ public class PaymentGateway {
     ) {
         Map<String, String> params = new HashMap<>();
 
-        // Required Parameters
+        // Required Parameters - make sure all these are filled
         params.put("merchant_id", MERCHANT_ID);
         params.put("return_url", returnUrl);
         params.put("cancel_url", cancelUrl);
@@ -85,22 +85,28 @@ public class PaymentGateway {
         params.put("currency", payment.getCurrency());
         params.put("amount", payment.getAmount().toString());
 
-        // Customer details
-        params.put("first_name", user.getUsername());
-        params.put("last_name", "");
-        params.put("email", user.getEmail());
-        params.put("phone", user.getPhone() != null ? user.getPhone() : "");
-        params.put("address", "");
-        params.put("city", "");
-        params.put("country", "Sri Lanka");
+        // Customer details - make sure these are not null/empty
+        params.put("first_name","Guest");
+        params.put("last_name","Customer");
+        params.put("email","customer@example.com");
+        params.put("phone","0771234567");
+        params.put("address","Hotel Address");
+        params.put("city","Colombo");
+        params.put("country","Sri Lanka");
 
-        // Custom parameters
+        // Custom parameters for your reference
         params.put("custom_1", reservation.getId());
         params.put("custom_2", user.getId());
 
-        // Generate hash
+        // Generate hash - this is critical for PayHere validation
         String hash = generateHash(params);
         params.put("hash", hash);
+
+        // Debug info to check parameters being sent
+        System.out.println("PayHere parameters:");
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            System.out.println("  " + entry.getKey() + ": " + entry.getValue());
+        }
 
         return params;
     }
@@ -142,7 +148,11 @@ public class PaymentGateway {
         stringToHash += params.get("currency");
         stringToHash += MERCHANT_SECRET;
 
-        return md5(stringToHash);
+        System.out.println("String to hash: " + stringToHash);
+        String hash = md5(stringToHash);
+        System.out.println("Generated hash: " + hash);
+
+        return hash;
     }
 
     /**
@@ -165,6 +175,7 @@ public class PaymentGateway {
     ) {
         // Verification logic for PayHere notifications
         if (!merchantId.equals(MERCHANT_ID)) {
+            System.out.println("Merchant ID mismatch: " + merchantId + " vs " + MERCHANT_ID);
             return false;
         }
 
@@ -178,6 +189,7 @@ public class PaymentGateway {
         stringToHash += MERCHANT_SECRET;
 
         String generatedHash = md5(stringToHash);
+        System.out.println("Generated verification hash: " + generatedHash);
 
         // In a real implementation, compare this with the hash provided in the notification
         // return generatedHash.equals(providedHash);

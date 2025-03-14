@@ -8,7 +8,7 @@ import com.tablebooknow.model.reservation.Reservation;
 import com.tablebooknow.model.user.User;
 import com.tablebooknow.service.PaymentGateway;
 import com.tablebooknow.util.ReservationQueue;
-
+import java.util.Enumeration;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -211,15 +211,30 @@ public class PaymentServlet extends HttpServlet {
     /**
      * Initiate a payment for a reservation
      */
+    // In src/main/java/com/tablebooknow/controller/payment/PaymentServlet.java
+// Enhanced initiatePayment method with better debugging
+
+    // The initiatePayment method remains the same:
     private void initiatePayment(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.println("Initiating payment");
 
         HttpSession session = request.getSession();
         String userId = (String) session.getAttribute("userId");
 
+        // Debug all session attributes
+        System.out.println("All session attributes:");
+        Enumeration<String> attributeNames = session.getAttributeNames();
+        while (attributeNames.hasMoreElements()) {
+            String name = attributeNames.nextElement();
+            System.out.println("  " + name + ": " + session.getAttribute(name));
+        }
+
         String reservationId = request.getParameter("reservationId");
         if (reservationId == null) {
             reservationId = (String) session.getAttribute("reservationId");
+            System.out.println("Retrieved reservationId from session: " + reservationId);
+        } else {
+            System.out.println("Retrieved reservationId from request parameters: " + reservationId);
         }
 
         if (reservationId == null) {
@@ -228,13 +243,15 @@ public class PaymentServlet extends HttpServlet {
             return;
         }
 
-        // Store reservation ID in session
+        // Store reservation ID in session (in case it came from request parameters)
         session.setAttribute("reservationId", reservationId);
+        System.out.println("Stored reservationId in session: " + reservationId);
 
         // Include reservation details for the payment page
         try {
             Reservation reservation = reservationDAO.findById(reservationId);
             if (reservation != null) {
+                System.out.println("Found reservation: " + reservation);
                 request.setAttribute("reservation", reservation);
 
                 // Extract table information for display
@@ -247,15 +264,21 @@ public class PaymentServlet extends HttpServlet {
                     else if (typeChar == 'c') tableType = "Couple";
                     request.setAttribute("tableType", tableType);
                 }
+            } else {
+                System.out.println("Reservation not found for ID: " + reservationId);
             }
         } catch (Exception e) {
             System.err.println("Error loading reservation: " + e.getMessage());
+            e.printStackTrace();
             // Continue to payment page anyway
         }
 
         // Forward to payment page
+        System.out.println("Forwarding to payment.jsp");
         request.getRequestDispatcher("/payment.jsp").forward(request, response);
     }
+
+    // In PaymentServlet.java, improve the handlePaymentSuccess method
 
     /**
      * Handle successful payment callback from PayHere
@@ -270,10 +293,26 @@ public class PaymentServlet extends HttpServlet {
         String status = request.getParameter("status_code");
         String paymentGatewayId = request.getParameter("payment_id");
         String orderId = request.getParameter("order_id");
+        String simulatePayment = request.getParameter("simulatePayment");
 
         System.out.println("Payment status: " + status);
         System.out.println("PayHere payment ID: " + paymentGatewayId);
         System.out.println("Order ID: " + orderId);
+        System.out.println("Simulation mode: " + simulatePayment);
+
+        // Log all parameters for debugging
+        System.out.println("All payment success parameters:");
+        Enumeration<String> paramNames = request.getParameterNames();
+        while (paramNames.hasMoreElements()) {
+            String paramName = paramNames.nextElement();
+            String[] values = request.getParameterValues(paramName);
+            for (String value : values) {
+                System.out.println("  " + paramName + ": " + value);
+            }
+        }
+
+        // Check for simulation mode
+        boolean isSimulation = "true".equals(simulatePayment);
 
         // Validate payment
         boolean isValid = false;
@@ -284,7 +323,54 @@ public class PaymentServlet extends HttpServlet {
         }
 
         try {
-            if (orderId != null) {
+            if (isSimulation) {
+                // For simulation, create a simulated payment record
+                if (reservationId != null) {
+                    // Extract table type from reservation
+                    Reservation reservation = reservationDAO.findById(reservationId);
+                    if (reservation != null) {
+                        String userId = (String) session.getAttribute("userId");
+                        User user = userDAO.findById(userId);
+
+                        if (user != null) {
+                            // Create a simulated payment
+                            String tableId = reservation.getTableId();
+                            String tableType = "regular";
+                            if (tableId != null && !tableId.isEmpty()) {
+                                char typeChar = tableId.charAt(0);
+                                if (typeChar == 'f') tableType = "family";
+                                else if (typeChar == 'l') tableType = "luxury";
+                                else if (typeChar == 'c') tableType = "couple";
+                            }
+
+                            BigDecimal amount = paymentGateway.calculateAmount(tableType, reservation.getDuration());
+
+                            Payment payment = new Payment();
+                            payment.setUserId(userId);
+                            payment.setReservationId(reservationId);
+                            payment.setAmount(amount);
+                            payment.setCurrency("LKR");
+                            payment.setStatus("COMPLETED");
+                            payment.setTransactionId("SIM-" + System.currentTimeMillis());
+                            payment.setPaymentGateway("Development Simulation");
+                            payment.setCompletedAt(LocalDateTime.now());
+
+                            paymentDAO.create(payment);
+                            paymentId = payment.getId();
+
+                            // Update reservation status
+                            reservation.setStatus("confirmed");
+                            reservationDAO.update(reservation);
+
+                            // Add to reservation queue
+                            reservationQueue.enqueue(reservation);
+
+                            isValid = true;
+                        }
+                    }
+                }
+            } else if (orderId != null) {
+                // For real PayHere payment
                 Payment payment = paymentDAO.findById(orderId);
                 if (payment != null) {
                     // Update payment status
