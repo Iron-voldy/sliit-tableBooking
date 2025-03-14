@@ -9,6 +9,7 @@ import com.tablebooknow.model.user.User;
 import com.tablebooknow.service.PaymentGateway;
 import com.tablebooknow.util.ReservationQueue;
 import java.util.Enumeration;
+import com.tablebooknow.util.QRCodeGenerator;
 import com.tablebooknow.service.EmailService;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -288,6 +289,7 @@ public class PaymentServlet extends HttpServlet {
         request.getRequestDispatcher("/payment.jsp").forward(request, response);
     }
 
+    // This code should be inserted into the handlePaymentSuccess method in PaymentServlet.java
     private void handlePaymentSuccess(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.println("Payment success callback received");
 
@@ -331,6 +333,7 @@ public class PaymentServlet extends HttpServlet {
         Payment payment = null;
         Reservation reservation = null;
         User user = null;
+        String qrCodeBase64 = null;
 
         try {
             if (isSimulation) {
@@ -444,18 +447,26 @@ public class PaymentServlet extends HttpServlet {
                 }
             }
 
-            // Send confirmation email if payment was successful
+            // Generate QR code if payment was successful
             if (isValid && payment != null && reservation != null && user != null) {
                 try {
-                    System.out.println("Sending confirmation email to user: " + user.getUsername() + " at email: " + user.getEmail());
+                    System.out.println("Generating QR code for reservation: " + reservationId);
 
-                    // This will log the email details with QR code, not actually send it
-                    EmailService.sendConfirmationEmail(user, reservation, payment);
+                    // Generate QR code content
+                    String qrContent = QRCodeGenerator.createQRCodeContent(
+                            reservation.getId(),
+                            payment.getId(),
+                            user.getId());
 
-                    // Add to confirmation message
-                    confirmationMessage += " A confirmation email with your reservation details and QR code has been sent to your email address.";
+                    // Generate QR code as Base64 string for displaying in browser
+                    qrCodeBase64 = QRCodeGenerator.createQRCodeBase64(qrContent, 250, 250);
+
+                    // Store QR code in session for display on confirmation page
+                    session.setAttribute("qrCodeBase64", qrCodeBase64);
+
+                    confirmationMessage += " Please keep your reservation QR code for check-in.";
                 } catch (Exception e) {
-                    System.err.println("Error sending confirmation email: " + e.getMessage());
+                    System.err.println("Error generating QR code: " + e.getMessage());
                     e.printStackTrace();
                     confirmationMessage += " Please keep your reservation ID for check-in.";
                 }
@@ -477,6 +488,10 @@ public class PaymentServlet extends HttpServlet {
                 session.setAttribute("reservationTime", reservation.getReservationTime());
             }
 
+            if (qrCodeBase64 != null) {
+                session.setAttribute("qrCodeBase64", qrCodeBase64);
+            }
+
             request.setAttribute("paymentSuccessful", true);
 
             // Redirect to new confirmation page
@@ -487,7 +502,6 @@ public class PaymentServlet extends HttpServlet {
             request.getRequestDispatcher("/paymentSuccess.jsp").forward(request, response);
         }
     }
-
     /**
      * Handle cancelled payment from PayHere
      */
