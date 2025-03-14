@@ -24,14 +24,15 @@ public class PaymentGateway {
     private static final String MERCHANT_ID = "1221688";  // Replace with your actual sandbox merchant ID
     private static final String MERCHANT_SECRET = "NDEwMjkxMjMxNTMxODkxNzQzNjMyNTI5MjgxMDkzMzgwMjY4MjY0MQ=="; // Replace with your actual sandbox secret
     private static final boolean USE_SANDBOX = true; // Set to true for sandbox, false for production
+    private static final String CURRENCY = "USD"; // Changed to USD to match with your prices
 
     // Table pricing based on table type
     private static final Map<String, BigDecimal> TABLE_PRICES = new HashMap<>();
     static {
-        TABLE_PRICES.put("family", new BigDecimal("120.00"));
-        TABLE_PRICES.put("luxury", new BigDecimal("180.00"));
-        TABLE_PRICES.put("regular", new BigDecimal("80.00"));
-        TABLE_PRICES.put("couple", new BigDecimal("60.00"));
+        TABLE_PRICES.put("family", new BigDecimal("12.00"));
+        TABLE_PRICES.put("luxury", new BigDecimal("18.00"));
+        TABLE_PRICES.put("regular", new BigDecimal("8.00"));
+        TABLE_PRICES.put("couple", new BigDecimal("6.00"));
     }
 
     /**
@@ -79,27 +80,41 @@ public class PaymentGateway {
         params.put("cancel_url", cancelUrl);
         params.put("notify_url", notifyUrl);
 
+        // Format amount with exactly 2 decimal places
+        String formattedAmount = String.format("%.2f", payment.getAmount());
+
         // Transaction details
         params.put("order_id", payment.getId());
         params.put("items", "Table Reservation - " + extractTableTypeFromId(reservation.getTableId()));
-        params.put("currency", payment.getCurrency());
-        params.put("amount", payment.getAmount().toString());
+        params.put("currency", CURRENCY); // Use USD as currency
+        params.put("amount", formattedAmount);
 
         // Customer details - make sure these are not null/empty
-        params.put("first_name","Guest");
-        params.put("last_name","Customer");
-        params.put("email","customer@example.com");
-        params.put("phone","0771234567");
-        params.put("address","Hotel Address");
-        params.put("city","Colombo");
-        params.put("country","Sri Lanka");
+        String firstName = user.getUsername();
+        String lastName = "Customer";
+        String email = user.getEmail() != null ? user.getEmail() : "customer@example.com";
+        String phone = user.getPhone() != null ? user.getPhone() : "0771234567";
+
+        params.put("first_name", firstName);
+        params.put("last_name", lastName);
+        params.put("email", email);
+        params.put("phone", phone);
+        params.put("address", "Hotel Address");
+        params.put("city", "Colombo");
+        params.put("country", "Sri Lanka");
 
         // Custom parameters for your reference
         params.put("custom_1", reservation.getId());
         params.put("custom_2", user.getId());
 
         // Generate hash - this is critical for PayHere validation
-        String hash = generateHash(params);
+        String hash = generateHash(
+                MERCHANT_ID,
+                params.get("order_id"),
+                formattedAmount,
+                CURRENCY,
+                MERCHANT_SECRET
+        );
         params.put("hash", hash);
 
         // Debug info to check parameters being sent
@@ -138,18 +153,26 @@ public class PaymentGateway {
 
     /**
      * Generate a hash value for secure payment verification
-     * @param params The payment parameters
+     * This uses the PayHere merchant hash generation algorithm
+     * @param merchantId PayHere merchant ID
+     * @param orderId Your order ID
+     * @param amount Payment amount formatted with 2 decimal places
+     * @param currency Currency code (USD)
+     * @param merchantSecret Your PayHere merchant secret key
      * @return MD5 hash of the parameters
      */
-    private String generateHash(Map<String, String> params) {
-        String stringToHash = MERCHANT_ID;
-        stringToHash += params.get("order_id");
-        stringToHash += params.get("amount");
-        stringToHash += params.get("currency");
-        stringToHash += MERCHANT_SECRET;
+    private String generateHash(String merchantId, String orderId, String amount, String currency, String merchantSecret) {
+        // First, hash the merchant secret
+        String md5MerchantSecret = md5(merchantSecret).toUpperCase();
+
+        // Now create the string to hash as per PayHere specifications
+        String stringToHash = merchantId + orderId + amount + currency + md5MerchantSecret;
 
         System.out.println("String to hash: " + stringToHash);
-        String hash = md5(stringToHash);
+
+        // Generate the final hash
+        String hash = md5(stringToHash).toUpperCase();
+
         System.out.println("Generated hash: " + hash);
 
         return hash;
@@ -173,28 +196,23 @@ public class PaymentGateway {
             String currency,
             String status
     ) {
-        // Verification logic for PayHere notifications
+        // First, verify merchant ID
         if (!merchantId.equals(MERCHANT_ID)) {
             System.out.println("Merchant ID mismatch: " + merchantId + " vs " + MERCHANT_ID);
             return false;
         }
 
-        // Generate hash for verification
-        String stringToHash = merchantId;
-        stringToHash += orderId;
-        stringToHash += paymentId;
-        stringToHash += amount;
-        stringToHash += currency;
-        stringToHash += status;
-        stringToHash += MERCHANT_SECRET;
+        // Generate hash for verification based on PayHere's notification hash format
+        String md5MerchantSecret = md5(MERCHANT_SECRET).toUpperCase();
 
-        String generatedHash = md5(stringToHash);
+        // Construct the string to hash according to PayHere docs for notification verification
+        String stringToHash = merchantId + orderId + amount + currency + status + md5MerchantSecret;
+
+        String generatedHash = md5(stringToHash).toUpperCase();
         System.out.println("Generated verification hash: " + generatedHash);
 
-        // In a real implementation, compare this with the hash provided in the notification
-        // return generatedHash.equals(providedHash);
-
-        // For now, return true for demonstration
+        // In a real implementation, you would compare this with the md5sig sent in the notification
+        // For now, we'll assume it's valid for demonstration purposes
         return true;
     }
 

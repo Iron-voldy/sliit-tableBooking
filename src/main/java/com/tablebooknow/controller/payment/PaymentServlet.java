@@ -85,6 +85,17 @@ public class PaymentServlet extends HttpServlet {
         String pathInfo = request.getPathInfo();
         System.out.println("POST request to payment: " + pathInfo);
 
+        // Debug: Log all request parameters
+        System.out.println("Request parameters:");
+        Enumeration<String> paramNames = request.getParameterNames();
+        while (paramNames.hasMoreElements()) {
+            String paramName = paramNames.nextElement();
+            String[] paramValues = request.getParameterValues(paramName);
+            for (String value : paramValues) {
+                System.out.println("  " + paramName + " = " + value);
+            }
+        }
+
         // Check if user is logged in
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
@@ -170,7 +181,7 @@ public class PaymentServlet extends HttpServlet {
             payment.setUserId(userId);
             payment.setReservationId(reservationId);
             payment.setAmount(amount);
-            payment.setCurrency("LKR"); // Sri Lankan Rupees
+            payment.setCurrency("USD"); // Use USD currency to match pricing
             payment.setStatus("PENDING");
             payment.setPaymentGateway("PayHere");
 
@@ -211,10 +222,6 @@ public class PaymentServlet extends HttpServlet {
     /**
      * Initiate a payment for a reservation
      */
-    // In src/main/java/com/tablebooknow/controller/payment/PaymentServlet.java
-// Enhanced initiatePayment method with better debugging
-
-    // The initiatePayment method remains the same:
     private void initiatePayment(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.println("Initiating payment");
 
@@ -277,8 +284,6 @@ public class PaymentServlet extends HttpServlet {
         System.out.println("Forwarding to payment.jsp");
         request.getRequestDispatcher("/payment.jsp").forward(request, response);
     }
-
-    // In PaymentServlet.java, improve the handlePaymentSuccess method
 
     /**
      * Handle successful payment callback from PayHere
@@ -349,7 +354,7 @@ public class PaymentServlet extends HttpServlet {
                             payment.setUserId(userId);
                             payment.setReservationId(reservationId);
                             payment.setAmount(amount);
-                            payment.setCurrency("LKR");
+                            payment.setCurrency("USD");
                             payment.setStatus("COMPLETED");
                             payment.setTransactionId("SIM-" + System.currentTimeMillis());
                             payment.setPaymentGateway("Development Simulation");
@@ -446,6 +451,7 @@ public class PaymentServlet extends HttpServlet {
         String payhere_amount = request.getParameter("payhere_amount");
         String payhere_currency = request.getParameter("payhere_currency");
         String status_code = request.getParameter("status_code");
+        String md5sig = request.getParameter("md5sig");
 
         System.out.println("Notification details - Order: " + orderId + ", Status: " + status_code);
 
