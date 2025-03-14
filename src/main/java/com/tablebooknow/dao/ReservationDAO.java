@@ -221,7 +221,9 @@ public class ReservationDAO {
         List<Reservation> dateReservations = findByDate(date);
 
         for (Reservation reservation : dateReservations) {
-            if (reservation.getStatus().equals("cancelled")) {
+            // IMPORTANT CHANGE: Only consider confirmed reservations
+            // This ensures only completed payments are counted as reserved
+            if (!reservation.getStatus().equals("confirmed")) {
                 continue;
             }
 
@@ -272,6 +274,11 @@ public class ReservationDAO {
 
         // Check if there's any reservation that would conflict
         for (Reservation reservation : reservations) {
+            // IMPORTANT CHANGE: Only check confirmed reservations for conflicts
+            if (!reservation.getStatus().equals("confirmed")) {
+                continue;
+            }
+
             try {
                 LocalTime reservationTime = LocalTime.parse(reservation.getReservationTime());
                 LocalTime reservationEndTime = reservationTime.plusHours(reservation.getDuration());

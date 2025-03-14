@@ -367,7 +367,8 @@ public class PaymentServlet extends HttpServlet {
                             paymentId = payment.getId();
                             session.setAttribute("paymentId", paymentId);
 
-                            // Update reservation status
+                            // Update reservation status to confirmed
+                            // IMPORTANT: This is the critical part that properly marks the reservation as confirmed
                             reservation.setStatus("confirmed");
                             reservationDAO.update(reservation);
 
@@ -418,7 +419,7 @@ public class PaymentServlet extends HttpServlet {
                     // Find and update the reservation
                     Reservation reservation = reservationDAO.findById(payment.getReservationId());
                     if (reservation != null) {
-                        // Update reservation status
+                        // IMPORTANT: Update reservation status to confirmed when payment completes
                         reservation.setStatus("confirmed");
                         reservationDAO.update(reservation);
 

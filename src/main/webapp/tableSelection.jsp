@@ -102,6 +102,7 @@
 
     <script>
 // Store reservation details from JSP
+// Store reservation details from JSP
 const reservationDetails = {
     date: "<%= reservationDate %>",
     time: "<%= reservationTime %>",
@@ -237,6 +238,9 @@ function processReservedTables() {
             // Initialize reserved array if it doesn't exist
             if (!tableType.reserved) {
                 tableType.reserved = [];
+            } else {
+                // Clear existing reservations to avoid duplicates
+                tableType.reserved = [];
             }
 
             // Check each table of this type
@@ -245,11 +249,9 @@ function processReservedTables() {
 
                 // Check if this table is in the serverReservedTables array
                 if (serverReservedTables.includes(tableId)) {
-                    // Add to the reserved list if not already there
-                    if (!tableType.reserved.includes(i)) {
-                        tableType.reserved.push(i);
-                        console.log(`Marked table ${tableId} as reserved`);
-                    }
+                    // Add to the reserved list
+                    tableType.reserved.push(i);
+                    console.log(`Marked table ${tableId} as reserved`);
                 }
             }
         });
@@ -679,10 +681,11 @@ function showFloor(floorNumber) {
 
 // Function to refresh the reserved tables from the server
 function refreshReservedTables(callback) {
-    // Make AJAX call to get updated reserved tables
+    // Make AJAX call to get updated reserved tables - only tables with COMPLETED payments
     const xhr = new XMLHttpRequest();
     xhr.open("GET", "${pageContext.request.contextPath}/reservation/getReservedTables?date=" +
-        reservationDetails.date + "&time=" + reservationDetails.time + "&duration=" + reservationDetails.duration, true);
+        reservationDetails.date + "&time=" + reservationDetails.time +
+        "&duration=" + reservationDetails.duration + "&paymentStatus=COMPLETED", true);
 
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
@@ -690,17 +693,20 @@ function refreshReservedTables(callback) {
                 try {
                     const response = JSON.parse(xhr.responseText);
                     if (response.reservedTables) {
-                        // Update serverReservedTables
+                        // Update serverReservedTables - clear existing data first
                         serverReservedTables.length = 0; // Clear existing array
+
+                        // Add new data - only tables with completed payments
                         response.reservedTables.forEach(tableId => {
                             serverReservedTables.push(tableId);
                         });
 
-                        console.log("Updated reserved tables:", serverReservedTables);
+                        console.log("Updated reserved tables (completed payments only):", serverReservedTables);
 
-                        // Reset reserved tables in floorConfig
+                        // Reset reserved tables in floorConfig - clear all existing reservations
                         for (const floor in floorConfig) {
                             floorConfig[floor].tables.forEach(tableType => {
+                                // Clear all existing reservations to start fresh
                                 tableType.reserved = [];
                             });
                         }
@@ -710,6 +716,7 @@ function refreshReservedTables(callback) {
                     }
                 } catch (e) {
                     console.error("Error parsing server response:", e);
+                    console.error("Response text:", xhr.responseText);
                 }
             } else {
                 console.error("Error fetching reserved tables. Status:", xhr.status);
@@ -1022,7 +1029,16 @@ init();
 // Refresh reserved tables every 30 seconds to keep the view updated
 setInterval(function() {
     if (!rotateBuilding) { // Only refresh if user is viewing a floor
-        refreshReservedTables();
+        refreshReservedTables(() => {
+            // After refreshing, update the current floor view if it's open
+            const visibleFloorMap = document.querySelector('.floor-map[style*="display: block"]');
+            if (visibleFloorMap) {
+                const floorNumber = visibleFloorMap.id.split('-')[1];
+                if (floorNumber) {
+                    generateFloorView(parseInt(floorNumber));
+                }
+            }
+        });
     }
 }, 30000);
 
