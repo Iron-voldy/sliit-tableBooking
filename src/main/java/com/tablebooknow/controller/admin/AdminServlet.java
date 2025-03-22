@@ -55,22 +55,22 @@ public class AdminServlet extends HttpServlet {
             return;
         }
 
-        // Handle different admin paths
+        // Instead of using servlet paths, redirect directly to JSP files
         switch (pathInfo) {
             case "/dashboard":
-                showDashboard(request, response);
+                response.sendRedirect(request.getContextPath() + "/admin-dashboard.jsp");
                 break;
             case "/users":
-                showUsers(request, response);
+                response.sendRedirect(request.getContextPath() + "/admin-users.jsp");
                 break;
             case "/reservations":
-                showReservations(request, response);
+                response.sendRedirect(request.getContextPath() + "/admin-reservations.jsp");
                 break;
             case "/logout":
                 logout(request, response);
                 break;
             default:
-                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+                response.sendRedirect(request.getContextPath() + "/admin-dashboard.jsp");
                 break;
         }
     }
@@ -95,7 +95,7 @@ public class AdminServlet extends HttpServlet {
                 updateUser(request, response);
                 break;
             default:
-                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+                response.sendRedirect(request.getContextPath() + "/admin-dashboard.jsp");
                 break;
         }
     }
@@ -125,8 +125,9 @@ public class AdminServlet extends HttpServlet {
                 session.setAttribute("adminUsername", admin.getUsername());
                 session.setAttribute("isAdmin", true);
 
-                // Redirect to admin dashboard
-                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+                // Redirect directly to admin dashboard JSP
+
+                response.sendRedirect(request.getContextPath() + "/admin-dashboard.jsp");
             } else {
                 // Check if this is a regular user with admin privileges
                 User user = userDAO.findByUsername(username);
@@ -194,11 +195,13 @@ public class AdminServlet extends HttpServlet {
             request.setAttribute("upcomingReservations", upcomingReservations);
 
             // Forward to dashboard JSP
-            request.getRequestDispatcher("/WEB-INF/admin/admin-dashboard.jsp").forward(request, response);
+            // Changed path to match the admin-dashboard.jsp file location
+            request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);
 
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error loading dashboard: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/admin/admin-dashboard.jsp").forward(request, response);
+            // Changed path to match the admin-dashboard.jsp file location
+            request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);
         }
     }
 
@@ -209,10 +212,12 @@ public class AdminServlet extends HttpServlet {
         try {
             List<User> users = userDAO.findAll();
             request.setAttribute("users", users);
-            request.getRequestDispatcher("/WEB-INF/admin/users.jsp").forward(request, response);
+            // Changed path to match the admin-users.jsp file location
+            request.getRequestDispatcher("/admin-users.jsp").forward(request, response);
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error loading users: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/admin/users.jsp").forward(request, response);
+            // Changed path to match the admin-users.jsp file location
+            request.getRequestDispatcher("/admin-users.jsp").forward(request, response);
         }
     }
 
@@ -226,10 +231,12 @@ public class AdminServlet extends HttpServlet {
             request.setAttribute("reservations", reservations);
 
             // Forward to reservations JSP
-            request.getRequestDispatcher("/WEB-INF/admin/reservations.jsp").forward(request, response);
+            // Changed path to match the admin-reservations.jsp file location
+            request.getRequestDispatcher("/admin-reservations.jsp").forward(request, response);
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error loading reservations: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/admin/reservations.jsp").forward(request, response);
+            // Changed path to match the admin-reservations.jsp file location
+            request.getRequestDispatcher("/admin-reservations.jsp").forward(request, response);
         }
     }
 
