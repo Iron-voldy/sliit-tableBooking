@@ -118,6 +118,213 @@ public class AdminStatsServlet extends HttpServlet {
                 }
             }
 
+            // Get monthly revenue for chart
+            Map<String, BigDecimal> monthlyRevenue = calculateMonthlyRevenue(payments);
+
+            // Put all stats in the request
+            request.setAttribute("userCount", userCount);
+            request.setAttribute("totalReservations", totalReservations);
+            request.setAttribute("pendingReservations", pendingReservations);
+            request.setAttribute("confirmedReservations", confirmedReservations);
+            request.setAttribute("cancelledReservations", cancelledReservations);
+            request.setAttribute("todayReservations", todayReservations);
+            request.setAttribute("totalRevenue", totalRevenue);
+            request.setAttribute("monthlyRevenue", monthlyRevenue);
+
+            // Forward to dashboard
+            request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);
+        } catch (Exception e) {
+            request.setAttribute("errorMessage", "Error loading dashboard statistics: " + e.getMessage());
+            request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);
+        }
+    }
+
+    /**
+     * Get statistics for reservations only
+     */
+    private void getReservationStats(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        try {
+            List<Reservation> allReservations = reservationDAO.findAll();
+
+            // Count by status
+            int pendingReservations = 0;
+            int confirmedReservations = 0;
+            int cancelledReservations = 0;
+
+            for (Reservation reservation : allReservations) {
+                String status = reservation.getStatus();
+                if ("pending".equals(status)) {
+                    pendingReservations++;
+                } else if ("confirmed".equals(status)) {
+                    confirmedReservations++;
+                } else if ("cancelled".equals(status)) {
+                    cancelledReservations++;
+                }
+            }
+
+            // Get reservations by date
+            Map<String, Integer> reservationsByDate = new HashMap<>();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+            // Get dates for the next 7 days
+            LocalDate today = LocalDate.now();
+            for (int i = 0; i < 7; i++) {
+                LocalDate date = today.plusDays(i);
+                String dateStr = date.format(formatter);
+                List<Reservation> dailyReservations = reservationDAO.findByDate(dateStr);
+                reservationsByDate.put(dateStr, dailyReservations.size());
+            }
+
+            // Get reservations by table type
+            Map<String, Integer> reservationsByTableType = new HashMap<>();
+            reservationsByTableType.put("family", 0);
+            reservationsByTableType.put("regular", 0);
+            reservationsByTableType.put("luxury", 0);
+            reservationsByTableType.put("couple", 0);
+
+            for (Reservation reservation : allReservations) {
+                String tableId = reservation.getTableId();
+                if (tableId != null && !tableId.isEmpty()) {
+                    char typeChar = tableId.charAt(0);
+                    if (typeChar == 'f') {
+                        reservationsByTableType.put("family", reservationsByTableType.get("family") + 1);
+                    } else if (typeChar == 'r') {
+                        reservationsByTableType.put("regular", reservationsByTableType.get("regular") + 1);
+                    } else if (typeChar == 'l') {
+                        reservationsByTableType.put("luxury", reservationsByTableType.get("luxury") + 1);
+                    } else if (typeChar == 'c') {
+                        reservationsByTableType.put("couple", reservationsByTableType.get("couple") + 1);
+                    }
+                }
+            }
+
+            request.setAttribute("totalReservations", allReservations.size());
+            request.setAttribute("pendingReservations", pendingReservations);
+            request.setAttribute("confirmedReservations", confirmedReservations);
+            request.setAttribute("cancelledReservations", cancelledReservations);
+            request.setAttribute("reservationsByDate", reservationsByDate);
+            request.setAttribute("reservationsByTableType", reservationsByTableType);
+
+            request.getRequestDispatcher("/WEB-INF/admin/reservation-stats.jsp").forward(request, response);
+        } catch (Exception e) {
+            request.setAttribute("errorMessage", "Error loading reservation statistics: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+        }
+    }
+
+    /**
+     * Get statistics for revenue
+     */
+    private void getRevenueStats(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        try {
+            List<Payment> payments = paymentDAO.findAll();
+
+            // Filter completed payments
+            List<Payment> completedPayments = payments.stream()
+                    .filter(p -> "COMPLETED".equals(p.getStatus()))
+                    .collect(Collectors.toList());
+
+            // Calculate total revenue
+            BigDecimal totalRevenue = BigDecimal.ZERO;
+            for (Payment payment : completedPayments) {
+                if (payment.getAmount() != null) {
+                    totalRevenue = totalRevenue.add(payment.getAmount());
+                }
+            }
+
+            // Calculate monthly revenue
+            Map<String, BigDecimal> monthlyRevenue = calculateMonthlyRevenue(payments);
+
+            // Calculate revenue by table type
+            Map<String, BigDecimal> revenueByTableType = calculateRevenueByTableType(completedPayments);
+
+            request.setAttribute("totalRevenue", totalRevenue);
+            request.setAttribute("completedPayments", completedPayments.size());
+            request.setAttribute("pendingPayments", payments.size() - completedPayments.size());
+            request.setAttribute("monthlyRevenue", monthlyRevenue);
+            request.setAttribute("revenueByTableType", revenueByTableType);
+
+            request.getRequestDispatcher("/WEB-INF/admin/revenue-stats.jsp").forward(request, response);
+        } catch (Exception e) {
+            request.setAttribute("errorMessage", "Error loading revenue statistics: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+        }
+    }
+
+    /**
+     * Return statistics as JSON for AJAX requests
+     */
+    private void getStatsAsJson(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        String statsType = request.getParameter("type");
+        if (statsType == null) {
+            statsType = "dashboard";
+        }
+
+        PrintWriter out = response.getWriter();
+
+        try {
+            switch (statsType) {
+                case "dashboard":
+                    out.print(getDashboardStatsJson());
+                    break;
+                case "reservations":
+                    out.print(getReservationStatsJson());
+                    break;
+                case "revenue":
+                    out.print(getRevenueStatsJson());
+                    break;
+                default:
+                    out.print("{\"error\": \"Unknown stats type\"}");
+                    break;
+            }
+        } catch (Exception e) {
+            out.print("{\"error\": \"" + e.getMessage() + "\"}");
+        }
+    }
+
+    /**
+     * Dashboard statistics as JSON
+     */
+    private String getDashboardStatsJson() throws IOException {
+        StringBuilder json = new StringBuilder();
+        json.append("{");
+
+        try {
+            // Get user count
+            int userCount = userDAO.findAll().size();
+
+            // Get reservation counts
+            List<Reservation> allReservations = reservationDAO.findAll();
+            int totalReservations = allReservations.size();
+
+            // Count by status
+            int pendingReservations = 0;
+            int confirmedReservations = 0;
+            int cancelledReservations = 0;
+
+            for (Reservation reservation : allReservations) {
+                String status = reservation.getStatus();
+                if ("pending".equals(status)) {
+                    pendingReservations++;
+                } else if ("confirmed".equals(status)) {
+                    confirmedReservations++;
+                } else if ("cancelled".equals(status)) {
+                    cancelledReservations++;
+                }
+            }
+
+            // Get total revenue
+            BigDecimal totalRevenue = BigDecimal.ZERO;
+            List<Payment> payments = paymentDAO.findAll();
+            for (Payment payment : payments) {
+                if ("COMPLETED".equals(payment.getStatus()) && payment.getAmount() != null) {
+                    totalRevenue = totalRevenue.add(payment.getAmount());
+                }
+            }
+
             // Build JSON
             json.append("\"userCount\":").append(userCount).append(",");
             json.append("\"totalReservations\":").append(totalReservations).append(",");
@@ -318,209 +525,3 @@ public class AdminStatsServlet extends HttpServlet {
         return revenueByTableType;
     }
 }
-// Get monthly revenue for chart
-Map<String, BigDecimal> monthlyRevenue = calculateMonthlyRevenue(payments);
-
-// Put all stats in the request
-            request.setAttribute("userCount", userCount);
-            request.setAttribute("totalReservations", totalReservations);
-            request.setAttribute("pendingReservations", pendingReservations);
-            request.setAttribute("confirmedReservations", confirmedReservations);
-            request.setAttribute("cancelledReservations", cancelledReservations);
-            request.setAttribute("todayReservations", todayReservations);
-            request.setAttribute("totalRevenue", totalRevenue);
-            request.setAttribute("monthlyRevenue", monthlyRevenue);
-
-// Forward to dashboard
-            request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);
-        } catch (Exception e) {
-        request.setAttribute("errorMessage", "Error loading dashboard statistics: " + e.getMessage());
-        request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);
-        }
-                }
-
-/**
- * Get statistics for reservations only
- */
-private void getReservationStats(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    try {
-        List<Reservation> allReservations = reservationDAO.findAll();
-
-        // Count by status
-        int pendingReservations = 0;
-        int confirmedReservations = 0;
-        int cancelledReservations = 0;
-
-        for (Reservation reservation : allReservations) {
-            String status = reservation.getStatus();
-            if ("pending".equals(status)) {
-                pendingReservations++;
-            } else if ("confirmed".equals(status)) {
-                confirmedReservations++;
-            } else if ("cancelled".equals(status)) {
-                cancelledReservations++;
-            }
-        }
-
-        // Get reservations by date
-        Map<String, Integer> reservationsByDate = new HashMap<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-        // Get dates for the next 7 days
-        LocalDate today = LocalDate.now();
-        for (int i = 0; i < 7; i++) {
-            LocalDate date = today.plusDays(i);
-            String dateStr = date.format(formatter);
-            List<Reservation> dailyReservations = reservationDAO.findByDate(dateStr);
-            reservationsByDate.put(dateStr, dailyReservations.size());
-        }
-
-        // Get reservations by table type
-        Map<String, Integer> reservationsByTableType = new HashMap<>();
-        reservationsByTableType.put("family", 0);
-        reservationsByTableType.put("regular", 0);
-        reservationsByTableType.put("luxury", 0);
-        reservationsByTableType.put("couple", 0);
-
-        for (Reservation reservation : allReservations) {
-            String tableId = reservation.getTableId();
-            if (tableId != null && !tableId.isEmpty()) {
-                char typeChar = tableId.charAt(0);
-                if (typeChar == 'f') {
-                    reservationsByTableType.put("family", reservationsByTableType.get("family") + 1);
-                } else if (typeChar == 'r') {
-                    reservationsByTableType.put("regular", reservationsByTableType.get("regular") + 1);
-                } else if (typeChar == 'l') {
-                    reservationsByTableType.put("luxury", reservationsByTableType.get("luxury") + 1);
-                } else if (typeChar == 'c') {
-                    reservationsByTableType.put("couple", reservationsByTableType.get("couple") + 1);
-                }
-            }
-        }
-
-        request.setAttribute("totalReservations", allReservations.size());
-        request.setAttribute("pendingReservations", pendingReservations);
-        request.setAttribute("confirmedReservations", confirmedReservations);
-        request.setAttribute("cancelledReservations", cancelledReservations);
-        request.setAttribute("reservationsByDate", reservationsByDate);
-        request.setAttribute("reservationsByTableType", reservationsByTableType);
-
-        request.getRequestDispatcher("/WEB-INF/admin/reservation-stats.jsp").forward(request, response);
-    } catch (Exception e) {
-        request.setAttribute("errorMessage", "Error loading reservation statistics: " + e.getMessage());
-        response.sendRedirect(request.getContextPath() + "/admin/dashboard");
-    }
-}
-
-/**
- * Get statistics for revenue
- */
-private void getRevenueStats(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-    try {
-        List<Payment> payments = paymentDAO.findAll();
-
-        // Filter completed payments
-        List<Payment> completedPayments = payments.stream()
-                .filter(p -> "COMPLETED".equals(p.getStatus()))
-                .collect(Collectors.toList());
-
-        // Calculate total revenue
-        BigDecimal totalRevenue = BigDecimal.ZERO;
-        for (Payment payment : completedPayments) {
-            if (payment.getAmount() != null) {
-                totalRevenue = totalRevenue.add(payment.getAmount());
-            }
-        }
-
-        // Calculate monthly revenue
-        Map<String, BigDecimal> monthlyRevenue = calculateMonthlyRevenue(payments);
-
-        // Calculate revenue by table type
-        Map<String, BigDecimal> revenueByTableType = calculateRevenueByTableType(completedPayments);
-
-        request.setAttribute("totalRevenue", totalRevenue);
-        request.setAttribute("completedPayments", completedPayments.size());
-        request.setAttribute("pendingPayments", payments.size() - completedPayments.size());
-        request.setAttribute("monthlyRevenue", monthlyRevenue);
-        request.setAttribute("revenueByTableType", revenueByTableType);
-
-        request.getRequestDispatcher("/WEB-INF/admin/revenue-stats.jsp").forward(request, response);
-    } catch (Exception e) {
-        request.setAttribute("errorMessage", "Error loading revenue statistics: " + e.getMessage());
-        response.sendRedirect(request.getContextPath() + "/admin/dashboard");
-    }
-}
-
-/**
- * Return statistics as JSON for AJAX requests
- */
-private void getStatsAsJson(HttpServletRequest request, HttpServletResponse response) throws IOException {
-    response.setContentType("application/json");
-    response.setCharacterEncoding("UTF-8");
-
-    String statsType = request.getParameter("type");
-    if (statsType == null) {
-        statsType = "dashboard";
-    }
-
-    PrintWriter out = response.getWriter();
-
-    try {
-        switch (statsType) {
-            case "dashboard":
-                out.print(getDashboardStatsJson());
-                break;
-            case "reservations":
-                out.print(getReservationStatsJson());
-                break;
-            case "revenue":
-                out.print(getRevenueStatsJson());
-                break;
-            default:
-                out.print("{\"error\": \"Unknown stats type\"}");
-                break;
-        }
-    } catch (Exception e) {
-        out.print("{\"error\": \"" + e.getMessage() + "\"}");
-    }
-}
-
-/**
- * Dashboard statistics as JSON
- */
-private String getDashboardStatsJson() throws IOException {
-    StringBuilder json = new StringBuilder();
-    json.append("{");
-
-    try {
-        // Get user count
-        int userCount = userDAO.findAll().size();
-
-        // Get reservation counts
-        List<Reservation> allReservations = reservationDAO.findAll();
-        int totalReservations = allReservations.size();
-
-        // Count by status
-        int pendingReservations = 0;
-        int confirmedReservations = 0;
-        int cancelledReservations = 0;
-
-        for (Reservation reservation : allReservations) {
-            String status = reservation.getStatus();
-            if ("pending".equals(status)) {
-                pendingReservations++;
-            } else if ("confirmed".equals(status)) {
-                confirmedReservations++;
-            } else if ("cancelled".equals(status)) {
-                cancelledReservations++;
-            }
-        }
-
-        // Get total revenue
-        BigDecimal totalRevenue = BigDecimal.ZERO;
-        List<Payment> payments = paymentDAO.findAll();
-        for (Payment payment : payments) {
-            if ("COMPLETED".equals(payment.getStatus()) && payment.getAmount() != null) {
-                totalRevenue = totalRevenue.add(payment.getAmount());
-            }
-        }
