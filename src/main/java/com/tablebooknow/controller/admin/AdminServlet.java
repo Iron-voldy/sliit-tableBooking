@@ -58,19 +58,22 @@ public class AdminServlet extends HttpServlet {
         // Instead of using servlet paths, redirect directly to JSP files
         switch (pathInfo) {
             case "/dashboard":
-                response.sendRedirect(request.getContextPath() + "/admin-dashboard.jsp");
+                showDashboard(request, response);
                 break;
             case "/users":
-                response.sendRedirect(request.getContextPath() + "/admin-users.jsp");
+                response.sendRedirect(request.getContextPath() + "/admin/users/");
                 break;
             case "/reservations":
-                response.sendRedirect(request.getContextPath() + "/admin-reservations.jsp");
+                response.sendRedirect(request.getContextPath() + "/admin/reservations/");
+                break;
+            case "/tables":
+                response.sendRedirect(request.getContextPath() + "/admin/tables/");
                 break;
             case "/logout":
                 logout(request, response);
                 break;
             default:
-                response.sendRedirect(request.getContextPath() + "/admin-dashboard.jsp");
+                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                 break;
         }
     }
@@ -88,14 +91,8 @@ public class AdminServlet extends HttpServlet {
             case "/login":
                 login(request, response);
                 break;
-            case "/cancelReservation":
-                cancelReservation(request, response);
-                break;
-            case "/updateUser":
-                updateUser(request, response);
-                break;
             default:
-                response.sendRedirect(request.getContextPath() + "/admin-dashboard.jsp");
+                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                 break;
         }
     }
@@ -126,8 +123,7 @@ public class AdminServlet extends HttpServlet {
                 session.setAttribute("isAdmin", true);
 
                 // Redirect directly to admin dashboard JSP
-
-                response.sendRedirect(request.getContextPath() + "/admin-dashboard.jsp");
+                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             } else {
                 // Check if this is a regular user with admin privileges
                 User user = userDAO.findByUsername(username);
@@ -202,107 +198,6 @@ public class AdminServlet extends HttpServlet {
             request.setAttribute("errorMessage", "Error loading dashboard: " + e.getMessage());
             // Changed path to match the admin-dashboard.jsp file location
             request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);
-        }
-    }
-
-    /**
-     * Show list of users
-     */
-    private void showUsers(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        try {
-            List<User> users = userDAO.findAll();
-            request.setAttribute("users", users);
-            // Changed path to match the admin-users.jsp file location
-            request.getRequestDispatcher("/admin-users.jsp").forward(request, response);
-        } catch (Exception e) {
-            request.setAttribute("errorMessage", "Error loading users: " + e.getMessage());
-            // Changed path to match the admin-users.jsp file location
-            request.getRequestDispatcher("/admin-users.jsp").forward(request, response);
-        }
-    }
-
-    /**
-     * Show list of reservations
-     */
-    private void showReservations(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        try {
-            // Get all reservations
-            List<Reservation> reservations = reservationDAO.findAll();
-            request.setAttribute("reservations", reservations);
-
-            // Forward to reservations JSP
-            // Changed path to match the admin-reservations.jsp file location
-            request.getRequestDispatcher("/admin-reservations.jsp").forward(request, response);
-        } catch (Exception e) {
-            request.setAttribute("errorMessage", "Error loading reservations: " + e.getMessage());
-            // Changed path to match the admin-reservations.jsp file location
-            request.getRequestDispatcher("/admin-reservations.jsp").forward(request, response);
-        }
-    }
-
-    /**
-     * Cancel a reservation
-     */
-    private void cancelReservation(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String reservationId = request.getParameter("reservationId");
-
-        if (reservationId == null || reservationId.trim().isEmpty()) {
-            request.setAttribute("errorMessage", "Reservation ID is required");
-            response.sendRedirect(request.getContextPath() + "/admin/reservations");
-            return;
-        }
-
-        try {
-            boolean success = reservationDAO.cancelReservation(reservationId);
-
-            if (success) {
-                request.setAttribute("successMessage", "Reservation cancelled successfully");
-            } else {
-                request.setAttribute("errorMessage", "Failed to cancel reservation");
-            }
-
-            response.sendRedirect(request.getContextPath() + "/admin/reservations");
-        } catch (Exception e) {
-            request.setAttribute("errorMessage", "Error cancelling reservation: " + e.getMessage());
-            response.sendRedirect(request.getContextPath() + "/admin/reservations");
-        }
-    }
-
-    /**
-     * Update user information
-     */
-    private void updateUser(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String userId = request.getParameter("userId");
-        String isAdminStr = request.getParameter("isAdmin");
-
-        if (userId == null || userId.trim().isEmpty()) {
-            request.setAttribute("errorMessage", "User ID is required");
-            response.sendRedirect(request.getContextPath() + "/admin/users");
-            return;
-        }
-
-        try {
-            User user = userDAO.findById(userId);
-
-            if (user != null) {
-                boolean isAdmin = "on".equals(isAdminStr) || "true".equals(isAdminStr);
-                user.setAdmin(isAdmin);
-
-                boolean success = userDAO.update(user);
-
-                if (success) {
-                    request.setAttribute("successMessage", "User updated successfully");
-                } else {
-                    request.setAttribute("errorMessage", "Failed to update user");
-                }
-            } else {
-                request.setAttribute("errorMessage", "User not found");
-            }
-
-            response.sendRedirect(request.getContextPath() + "/admin/users");
-        } catch (Exception e) {
-            request.setAttribute("errorMessage", "Error updating user: " + e.getMessage());
-            response.sendRedirect(request.getContextPath() + "/admin/users");
         }
     }
 

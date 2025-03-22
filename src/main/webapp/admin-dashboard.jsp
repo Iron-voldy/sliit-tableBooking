@@ -524,14 +524,13 @@
                     const reservationData = JSON.parse(decodedText);
                     const detailsDiv = document.getElementById('reservationDetails');
 
-                    detailsDiv.innerHTML = `
-                        <div style="margin-top: 1rem;">
-                            <p><strong>Reservation ID:</strong> ${reservationData.reservationId || 'N/A'}</p>
-                            <p><strong>Payment ID:</strong> ${reservationData.paymentId || 'N/A'}</p>
-                            <p><strong>User ID:</strong> ${reservationData.userId || 'N/A'}</p>
-                            <p><strong>Timestamp:</strong> ${new Date(parseInt(reservationData.timestamp)).toLocaleString()}</p>
-                        </div>
-                    `;
+                    detailsDiv.innerHTML =
+                        '<div style="margin-top: 1rem;">' +
+                            '<p><strong>Reservation ID:</strong> ' + (reservationData.reservationId || 'N/A') + '</p>' +
+                            '<p><strong>Payment ID:</strong> ' + (reservationData.paymentId || 'N/A') + '</p>' +
+                            '<p><strong>User ID:</strong> ' + (reservationData.userId || 'N/A') + '</p>' +
+                            '<p><strong>Timestamp:</strong> ' + new Date(parseInt(reservationData.timestamp)).toLocaleString() + '</p>' +
+                        '</div>';
 
                     // Show check-in button
                     document.getElementById('checkInBtn').style.display = 'inline-block';
@@ -545,11 +544,10 @@
                     };
 
                 } catch (e) {
-                    document.getElementById('reservationDetails').innerHTML = `
-                        <div style="margin-top: 1rem; color: #ff6b6b;">
-                            <p>Invalid QR code format. Unable to parse reservation data.</p>
-                        </div>
-                    `;
+                    document.getElementById('reservationDetails').innerHTML =
+                        '<div style="margin-top: 1rem; color: #ff6b6b;">' +
+                            '<p>Invalid QR code format. Unable to parse reservation data.</p>' +
+                        '</div>';
                     document.getElementById('checkInBtn').style.display = 'none';
                 }
 
