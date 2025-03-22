@@ -53,6 +53,11 @@
     <listener-class>com.tablebooknow.config.ApplicationInitializer</listener-class>
   </listener>
 
+  <listener>
+    <listener-class>com.tablebooknow.config.AdminInitializer</listener-class>
+  </listener>
+
+
 
   <!-- Add your servlet mappings and other configurations as needed -->
 

@@ -86,7 +86,7 @@ public class UserServlet extends HttpServlet {
 
                 // Redirect based on user role
                 if (user.isAdmin()) {
-                    response.sendRedirect(request.getContextPath() + "/admin/dashboard.jsp");
+                    response.sendRedirect(request.getContextPath() + "/admin/admin-dashboard.jsp");
                 } else {
                     response.sendRedirect(request.getContextPath() + "/dateSelection.jsp");
                 }
