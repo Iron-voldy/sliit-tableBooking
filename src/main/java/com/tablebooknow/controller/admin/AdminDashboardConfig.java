@@ -16,70 +16,70 @@ public class AdminDashboardConfig {
      *
      * @return List of menu items with their properties
      */
-    public static List<Map<String, Object>> getAdminMenu() {
-        List<Map<String, Object>> menu = new ArrayList<>();
+    public static List<Map<String, String>> getAdminMenu() {
+        List<Map<String, String>> menu = new ArrayList<>();
 
         // Dashboard menu item
-        Map<String, Object> dashboardItem = new HashMap<>();
+        Map<String, String> dashboardItem = new HashMap<>();
         dashboardItem.put("id", "dashboard");
         dashboardItem.put("name", "Dashboard");
         dashboardItem.put("icon", "📊");
         dashboardItem.put("url", "/admin/dashboard");
-        dashboardItem.put("roles", new String[]{"admin", "superadmin"});
+        dashboardItem.put("roles", "admin,superadmin");
         menu.add(dashboardItem);
 
         // Reservations menu item
-        Map<String, Object> reservationsItem = new HashMap<>();
+        Map<String, String> reservationsItem = new HashMap<>();
         reservationsItem.put("id", "reservations");
         reservationsItem.put("name", "Reservations");
         reservationsItem.put("icon", "📅");
-        reservationsItem.put("url", "/admin/reservations/");
-        reservationsItem.put("roles", new String[]{"admin", "superadmin"});
+        reservationsItem.put("url", "/admin/reservations");
+        reservationsItem.put("roles", "admin,superadmin");
         menu.add(reservationsItem);
 
         // Tables menu item
-        Map<String, Object> tablesItem = new HashMap<>();
+        Map<String, String> tablesItem = new HashMap<>();
         tablesItem.put("id", "tables");
         tablesItem.put("name", "Table Management");
         tablesItem.put("icon", "🍽️");
-        tablesItem.put("url", "/admin/tables/");
-        tablesItem.put("roles", new String[]{"admin", "superadmin"});
+        tablesItem.put("url", "/admin/tables");
+        tablesItem.put("roles", "admin,superadmin");
         menu.add(tablesItem);
 
         // Users menu item
-        Map<String, Object> usersItem = new HashMap<>();
+        Map<String, String> usersItem = new HashMap<>();
         usersItem.put("id", "users");
         usersItem.put("name", "User Management");
         usersItem.put("icon", "👥");
-        usersItem.put("url", "/admin/users/");
-        usersItem.put("roles", new String[]{"admin", "superadmin"});
+        usersItem.put("url", "/admin/users");
+        usersItem.put("roles", "admin,superadmin");
         menu.add(usersItem);
 
-        // Statistics menu item
-        Map<String, Object> statsItem = new HashMap<>();
-        statsItem.put("id", "stats");
-        statsItem.put("name", "Statistics");
-        statsItem.put("icon", "📈");
-        statsItem.put("url", "/admin/stats/dashboard");
-        statsItem.put("roles", new String[]{"admin", "superadmin"});
-        menu.add(statsItem);
+        // QR Scanner menu item
+        Map<String, String> qrItem = new HashMap<>();
+        qrItem.put("id", "qr");
+        qrItem.put("name", "QR Scanner");
+        qrItem.put("icon", "📷");
+        qrItem.put("url", "/admin/qr");
+        qrItem.put("roles", "admin,superadmin");
+        menu.add(qrItem);
 
         // Settings menu item (only for superadmin)
-        Map<String, Object> settingsItem = new HashMap<>();
+        Map<String, String> settingsItem = new HashMap<>();
         settingsItem.put("id", "settings");
         settingsItem.put("name", "Settings");
         settingsItem.put("icon", "⚙️");
         settingsItem.put("url", "/admin/settings");
-        settingsItem.put("roles", new String[]{"superadmin"});
+        settingsItem.put("roles", "superadmin");
         menu.add(settingsItem);
 
         // Profile menu item
-        Map<String, Object> profileItem = new HashMap<>();
+        Map<String, String> profileItem = new HashMap<>();
         profileItem.put("id", "profile");
         profileItem.put("name", "Profile");
         profileItem.put("icon", "👤");
         profileItem.put("url", "/admin/profile");
-        profileItem.put("roles", new String[]{"admin", "superadmin"});
+        profileItem.put("roles", "admin,superadmin");
         menu.add(profileItem);
 
         return menu;

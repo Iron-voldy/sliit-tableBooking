@@ -17,10 +17,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Servlet for handling admin table management functions
+ * Servlet for admin table management
  */
 @WebServlet("/admin/tables/*")
-public class TableManagerServlet extends HttpServlet {
+public class AdminTableServlet extends HttpServlet {
     private ReservationDAO reservationDAO;
 
     @Override
@@ -38,51 +38,25 @@ public class TableManagerServlet extends HttpServlet {
         }
 
         String pathInfo = request.getPathInfo();
-        if (pathInfo == null) {
-            pathInfo = "/";
-        }
 
-        switch (pathInfo) {
-            case "/":
-                // View table status
-                viewTables(request, response);
-                break;
-            case "/status":
-                // View status of a specific table
-                viewTableStatus(request, response);
-                break;
-            case "/filter":
-                // Filter table status by date
-                filterTablesByDate(request, response);
-                break;
-            default:
-                response.sendRedirect(request.getContextPath() + "/admin/tables/");
-                break;
-        }
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // Check if admin is logged in
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("adminId") == null) {
-            response.sendRedirect(request.getContextPath() + "/admin/login");
+        // Default path handling
+        if (pathInfo == null || pathInfo.equals("/")) {
+            showAllTables(request, response);
             return;
         }
 
-        String pathInfo = request.getPathInfo();
-        if (pathInfo == null) {
-            pathInfo = "/";
+        // Handle specific paths
+        switch (pathInfo) {
+            case "/status":
+                showTableStatus(request, response);
+                break;
+            default:
+                showAllTables(request, response);
+                break;
         }
-
-        // We don't have any POST operations for tables yet, but could add in the future
-        response.sendRedirect(request.getContextPath() + "/admin/tables/");
     }
 
-    /**
-     * View all tables and their statuses
-     */
-    private void viewTables(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    private void showAllTables(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         try {
             // Get date parameter or use today's date
             String date = request.getParameter("date");
@@ -105,22 +79,20 @@ public class TableManagerServlet extends HttpServlet {
             LocalDate selectedDate = LocalDate.parse(date, formatter);
             request.setAttribute("formattedDate", selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")));
 
-            request.getRequestDispatcher("/WEB-INF/admin/tables.jsp").forward(request, response);
+            // Forward to tables JSP
+            request.getRequestDispatcher("/admin-tables.jsp").forward(request, response);
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error loading tables: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/admin/tables.jsp").forward(request, response);
+            request.getRequestDispatcher("/admin-tables.jsp").forward(request, response);
         }
     }
 
-    /**
-     * View status of a specific table
-     */
-    private void viewTableStatus(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    private void showTableStatus(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         String tableId = request.getParameter("id");
         String date = request.getParameter("date");
 
-        if (tableId == null || tableId.trim().isEmpty()) {
-            response.sendRedirect(request.getContextPath() + "/admin/tables/");
+        if (tableId == null || tableId.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/admin/tables");
             return;
         }
 
@@ -129,13 +101,7 @@ public class TableManagerServlet extends HttpServlet {
         }
 
         try {
-            // Get reservations for this table on the specified date
             List<Reservation> tableReservations = reservationDAO.findByTableAndDate(tableId, date);
-
-            // Sort by time
-            tableReservations.sort((r1, r2) -> r1.getReservationTime().compareTo(r2.getReservationTime()));
-
-            // Get table configuration
             Map<String, Object> tableConfig = getTableConfig(tableId);
 
             request.setAttribute("tableId", tableId);
@@ -148,43 +114,10 @@ public class TableManagerServlet extends HttpServlet {
             LocalDate selectedDate = LocalDate.parse(date, formatter);
             request.setAttribute("formattedDate", selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")));
 
-            request.getRequestDispatcher("/WEB-INF/admin/table-status.jsp").forward(request, response);
+            request.getRequestDispatcher("/admin-table-details.jsp").forward(request, response);
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error loading table status: " + e.getMessage());
-            response.sendRedirect(request.getContextPath() + "/admin/tables/");
-        }
-    }
-
-    /**
-     * Filter table status by date
-     */
-    private void filterTablesByDate(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String date = request.getParameter("date");
-
-        if (date == null || date.trim().isEmpty()) {
-            date = LocalDate.now().toString();
-        }
-
-        try {
-            // Get reserved tables for the date
-            List<String> reservedTables = reservationDAO.getReservedTables(date, null, 0);
-
-            // Create table configuration data
-            Map<String, Map<String, Object>> tableTypes = createTableConfiguration();
-
-            request.setAttribute("reservedTables", reservedTables);
-            request.setAttribute("tableTypes", tableTypes);
-            request.setAttribute("selectedDate", date);
-
-            // Format date for display
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            LocalDate selectedDate = LocalDate.parse(date, formatter);
-            request.setAttribute("formattedDate", selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")));
-
-            request.getRequestDispatcher("/WEB-INF/admin/tables.jsp").forward(request, response);
-        } catch (Exception e) {
-            request.setAttribute("errorMessage", "Error filtering tables: " + e.getMessage());
-            response.sendRedirect(request.getContextPath() + "/admin/tables/");
+            response.sendRedirect(request.getContextPath() + "/admin/tables");
         }
     }
 
