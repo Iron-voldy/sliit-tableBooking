@@ -237,7 +237,6 @@
             <a href="${pageContext.request.contextPath}/admin/reservations" class="nav-item <%= currentServletPath.contains("admin-reservations") && !currentServletPath.contains("queue") ? "active-section" : "" %>">📅 Reservations</a>
             <a href="${pageContext.request.contextPath}/admin/reservations/queue" class="nav-item <%= currentServletPath.contains("admin-reservation-queue") ? "active-section" : "" %>">🔄 Reservation Queue</a>
             <a href="${pageContext.request.contextPath}/admin/reservations/sorted" class="nav-item">⏱️ Sorted Reservations</a>
-            <a href="${pageContext.request.contextPath}/admin/tables" class="nav-item <%= currentServletPath.contains("admin-tables") ? "active-section" : "" %>">🍽️ Table Management</a>
             <a href="${pageContext.request.contextPath}/admin/users" class="nav-item <%= currentServletPath.contains("admin-users") ? "active-section" : "" %>">👥 User Management</a>
             <a href="${pageContext.request.contextPath}/admin/qr" class="nav-item <%= currentServletPath.contains("admin-qr") ? "active-section" : "" %>">📷 QR Scanner</a>
 
