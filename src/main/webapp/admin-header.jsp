@@ -174,6 +174,11 @@
             border: 1px solid rgba(244, 67, 54, 0.5);
         }
 
+        .warning-message {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+        }
+
         .logout-btn {
             position: absolute;
             bottom: 2rem;
@@ -192,6 +197,16 @@
             background: rgba(244, 67, 54, 1);
             transform: translateY(-2px);
         }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 50%;
+            background-color: #f44336;
+            color: white;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -207,6 +222,7 @@
         // Success/Error messages
         String successMessage = (String) request.getAttribute("successMessage");
         String errorMessage = (String) request.getAttribute("errorMessage");
+        String warningMessage = (String) request.getAttribute("warningMessage");
 
         // Get current servlet path for highlighting active navigation
         String currentServletPath = request.getServletPath();
@@ -218,7 +234,9 @@
             <p style="margin-bottom: 2rem; color: #ccc;">Welcome, <%= adminUsername %></p>
 
             <a href="${pageContext.request.contextPath}/admin/dashboard" class="nav-item <%= currentServletPath.contains("admin-dashboard") ? "active-section" : "" %>">📊 Dashboard</a>
-            <a href="${pageContext.request.contextPath}/admin/reservations" class="nav-item <%= currentServletPath.contains("admin-reservations") ? "active-section" : "" %>">📅 Reservations</a>
+            <a href="${pageContext.request.contextPath}/admin/reservations" class="nav-item <%= currentServletPath.contains("admin-reservations") && !currentServletPath.contains("queue") ? "active-section" : "" %>">📅 Reservations</a>
+            <a href="${pageContext.request.contextPath}/admin/reservations/queue" class="nav-item <%= currentServletPath.contains("admin-reservation-queue") ? "active-section" : "" %>">🔄 Reservation Queue</a>
+            <a href="${pageContext.request.contextPath}/admin/reservations/sorted" class="nav-item">⏱️ Sorted Reservations</a>
             <a href="${pageContext.request.contextPath}/admin/tables" class="nav-item <%= currentServletPath.contains("admin-tables") ? "active-section" : "" %>">🍽️ Table Management</a>
             <a href="${pageContext.request.contextPath}/admin/users" class="nav-item <%= currentServletPath.contains("admin-users") ? "active-section" : "" %>">👥 User Management</a>
             <a href="${pageContext.request.contextPath}/admin/qr" class="nav-item <%= currentServletPath.contains("admin-qr") ? "active-section" : "" %>">📷 QR Scanner</a>
@@ -237,5 +255,11 @@
             <% if (errorMessage != null) { %>
                 <div class="message error-message">
                     <%= errorMessage %>
+                </div>
+            <% } %>
+
+            <% if (warningMessage != null) { %>
+                <div class="message warning-message">
+                    <%= warningMessage %>
                 </div>
             <% } %>
