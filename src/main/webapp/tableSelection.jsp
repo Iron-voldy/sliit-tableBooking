@@ -52,8 +52,8 @@
     <nav class="header-nav">
         <a href="${pageContext.request.contextPath}/" class="logo">Gourmet Reserve</a>
         <div class="nav-links">
-            <a href="${pageContext.request.contextPath}/reservation/dateSelection">Reservations</a>
-          <a href="${pageContext.request.contextPath}/user/profile">Profile</a>
+           <a href="${pageContext.request.contextPath}/user/reservations">Reservations</a>
+            <a href="${pageContext.request.contextPath}/user/profile">Profile</a>
             <a href="${pageContext.request.contextPath}/user/logout">Logout</a>
         </div>
     </nav>
