@@ -45,7 +45,7 @@ public class UserProfileServlet extends HttpServlet {
             }
 
             request.setAttribute("user", user);
-            request.getRequestDispatcher("/user-user-profile.jsp").forward(request, response);
+            request.getRequestDispatcher("/user-profile.jsp").forward(request, response);
         } catch (Exception e) {
             System.err.println("Error processing user profile: " + e.getMessage());
             e.printStackTrace();
@@ -78,7 +78,7 @@ public class UserProfileServlet extends HttpServlet {
             User user = userDAO.findById(userId);
             if (user == null) {
                 request.setAttribute("errorMessage", "User not found");
-                request.getRequestDispatcher("/user-user-profile.jsp").forward(request, response);
+                request.getRequestDispatcher("/user-profile.jsp").forward(request, response);
                 return;
             }
 
@@ -107,7 +107,7 @@ public class UserProfileServlet extends HttpServlet {
                 if (!com.tablebooknow.util.PasswordHasher.checkPassword(currentPassword, user.getPassword())) {
                     request.setAttribute("errorMessage", "Current password is incorrect");
                     request.setAttribute("user", user);
-                    request.getRequestDispatcher("/user-user-profile.jsp").forward(request, response);
+                    request.getRequestDispatcher("/user-profile.jsp").forward(request, response);
                     return;
                 }
 
@@ -115,7 +115,7 @@ public class UserProfileServlet extends HttpServlet {
                 if (!newPassword.equals(confirmPassword)) {
                     request.setAttribute("errorMessage", "New passwords do not match");
                     request.setAttribute("user", user);
-                    request.getRequestDispatcher("/user-user-profile.jsp").forward(request, response);
+                    request.getRequestDispatcher("/user-profile.jsp").forward(request, response);
                     return;
                 }
 
@@ -132,12 +132,12 @@ public class UserProfileServlet extends HttpServlet {
             }
 
             request.setAttribute("user", user);
-            request.getRequestDispatcher("/user-user-profile.jsp").forward(request, response);
+            request.getRequestDispatcher("/user-profile.jsp").forward(request, response);
         } catch (Exception e) {
             System.err.println("Error updating user profile: " + e.getMessage());
             e.printStackTrace();
             request.setAttribute("errorMessage", "An error occurred: " + e.getMessage());
-            request.getRequestDispatcher("/user-user-profile.jsp").forward(request, response);
+            request.getRequestDispatcher("/user-profile.jsp").forward(request, response);
         }
     }
 }
