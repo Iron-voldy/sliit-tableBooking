@@ -66,7 +66,7 @@ public class UserProfileServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         if ("update-profile".equals(action)) {
-            updateUserProfile(request, response, userId);
+             updateUserProfile(request, response, userId);
         } else {
             response.sendRedirect(request.getContextPath() + "/user/profile");
         }
