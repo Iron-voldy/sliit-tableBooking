@@ -279,15 +279,16 @@
         String errorMessage = (String) request.getAttribute("errorMessage");
     %>
 
-    <!-- Header Navigation -->
-    <nav class="header-nav">
-        <a href="${pageContext.request.contextPath}/" class="logo">Gourmet Reserve</a>
-        <div class="nav-links">
-            <a href="${pageContext.request.contextPath}/reservation/dateSelection">Reservations</a>
-            <a href="${pageContext.request.contextPath}/user/profile" style="color: var(--gold);">Profile</a>
-            <a href="${pageContext.request.contextPath}/user/logout">Logout</a>
-        </div>
-    </nav>
+       <!-- Header Navigation -->
+        <nav class="header-nav">
+            <a href="${pageContext.request.contextPath}/" class="logo">Gourmet Reserve</a>
+            <div class="nav-links">
+                <a href="${pageContext.request.contextPath}/reservation/dateSelection">Make Reservation</a>
+                <a href="${pageContext.request.contextPath}/user/reservations">My Reservations</a>
+                <a href="${pageContext.request.contextPath}/user/profile" style="color: var(--gold);">Profile</a>
+                <a href="${pageContext.request.contextPath}/user/logout">Logout</a>
+            </div>
+        </nav>
 
     <div class="profile-container">
         <div class="profile-header">

@@ -7,12 +7,9 @@
 
   <display-name>Hotel Table Reservation</display-name>
 
-
   <!-- Welcome File List -->
   <welcome-file-list>
-    <welcome-file>preloader.jsp</welcome-file>
     <welcome-file>index.jsp</welcome-file>
-    <welcome-file>index.html</welcome-file>
   </welcome-file-list>
 
   <!-- Session Configuration -->
@@ -30,26 +27,7 @@
     <location>/error/500.jsp</location>
   </error-page>
 
-  <dependency>
-    <groupId>javax.servlet</groupId>
-    <artifactId>javax.servlet-api</artifactId>
-    <version>4.0.1</version>
-    <scope>provided</scope>
-  </dependency>
-
-  <dependency>
-    <groupId>javax.mail</groupId>
-    <artifactId>javax.mail-api</artifactId>
-    <version>1.6.2</version>
-  </dependency>
-
-  <dependency>
-    <groupId>com.sun.mail</groupId>
-    <artifactId>javax.mail</artifactId>
-    <version>1.6.2</version>
-  </dependency>
-
-
+  <!-- Listeners -->
   <listener>
     <listener-class>com.tablebooknow.config.ApplicationInitializer</listener-class>
   </listener>
@@ -57,9 +35,5 @@
   <listener>
     <listener-class>com.tablebooknow.config.AdminInitializer</listener-class>
   </listener>
-
-
-
-  <!-- Add your servlet mappings and other configurations as needed -->
 
 </web-app>

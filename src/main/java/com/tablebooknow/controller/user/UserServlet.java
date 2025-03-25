@@ -84,11 +84,12 @@ public class UserServlet extends HttpServlet {
                 session.setAttribute("username", user.getUsername());
                 session.setAttribute("isAdmin", user.isAdmin());
 
-                // Redirect based on user role
+                // Redirect to appropriate page
                 if (user.isAdmin()) {
-                    response.sendRedirect(request.getContextPath() + "/admin/admin-dashboard.jsp");
+                    response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                 } else {
-                    response.sendRedirect(request.getContextPath() + "/dateSelection.jsp");
+                    // Redirect to home page with showPreloader parameter
+                    response.sendRedirect(request.getContextPath() + "/?showPreloader=true");
                 }
             } else {
                 request.setAttribute("errorMessage", "Invalid username or password");
@@ -147,8 +148,8 @@ public class UserServlet extends HttpServlet {
             session.setAttribute("username", newUser.getUsername());
             session.setAttribute("isAdmin", false);
 
-            response.sendRedirect(request.getContextPath() + "/login.jsp");
-
+            // Redirect new users to home page with preloader after registration
+            response.sendRedirect(request.getContextPath() + "/?showPreloader=true");
         } catch (Exception e) {
             request.setAttribute("errorMessage", "Error during registration: " + e.getMessage());
             request.getRequestDispatcher("/login.jsp?register=true").forward(request, response);

@@ -9,6 +9,13 @@
     <link href="${pageContext.request.contextPath}/assets/css/preloader.css" rel="stylesheet">
 </head>
 <body>
+    <%
+        // Check if user is already logged in
+        boolean isLoggedIn = session.getAttribute("userId") != null;
+        // Determine where to redirect after preloader
+        String redirectUrl = isLoggedIn ? "/" : "/login.jsp";
+    %>
+
     <div class="preloader">
         <div class="loading-text">
             PREPARING YOUR DINING EXPERIENCE
@@ -47,7 +54,7 @@
         window.addEventListener('load', function() {
             setTimeout(function() {
                 document.querySelector('.preloader').style.display = 'none';
-                window.location.href = '${pageContext.request.contextPath}/login.jsp';
+                window.location.href = '${pageContext.request.contextPath}<%= redirectUrl %>';
             }, 4000);
         });
     </script>
