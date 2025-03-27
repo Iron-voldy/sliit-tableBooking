@@ -3,6 +3,8 @@ package com.tablebooknow.controller.payment;
 import com.tablebooknow.dao.PaymentDAO;
 import com.tablebooknow.dao.ReservationDAO;
 import com.tablebooknow.dao.UserDAO;
+import com.tablebooknow.dao.PaymentCardDAO;
+import com.tablebooknow.model.payment.PaymentCard;
 import com.tablebooknow.model.payment.Payment;
 import com.tablebooknow.model.reservation.Reservation;
 import com.tablebooknow.model.user.User;
@@ -208,6 +210,31 @@ public class PaymentServlet extends HttpServlet {
                     payment, reservation, user, returnUrl, cancelUrl, notifyUrl
             );
 
+            // Check for a selected payment card
+            String paymentCardId = (String) session.getAttribute("paymentCardId");
+            if (paymentCardId != null) {
+                // You can load card details here if needed for payment gateway
+                try {
+                    PaymentCardDAO paymentCardDAO = new PaymentCardDAO();
+                    PaymentCard card = paymentCardDAO.findById(paymentCardId);
+
+                    if (card != null) {
+                        // Add card details to the payment parameters
+                        // This can be useful for reference and tracking
+                        params.put("custom_3", card.getId());
+
+                        // If you want to store the card association with the payment
+                        payment.setPaymentMethod("Card - " + card.getCardType());
+                        paymentDAO.update(payment);
+
+                        System.out.println("Using payment card: " + card.getId() + " for payment: " + payment.getId());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error loading payment card: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
             // Store the parameters for the JSP to create the form
             request.setAttribute("paymentParams", params);
             request.setAttribute("checkoutUrl", paymentGateway.getCheckoutUrl());
@@ -284,9 +311,9 @@ public class PaymentServlet extends HttpServlet {
             // Continue to payment page anyway
         }
 
-        // Forward to payment page
-        System.out.println("Forwarding to payment.jsp");
-        request.getRequestDispatcher("/payment.jsp").forward(request, response);
+        // Forward to payment dashboard instead of payment.jsp
+        System.out.println("Redirecting to payment dashboard");
+        response.sendRedirect(request.getContextPath() + "/paymentcard/dashboard");
     }
 
     // This code should be inserted into the handlePaymentSuccess method in PaymentServlet.java
