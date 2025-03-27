@@ -1,8 +1,7 @@
 package com.tablebooknow.dao;
 
-import com.tablebooknow.model.admin.Admin;
 import com.tablebooknow.util.FileHandler;
-
+import com.tablebooknow.model.admin.Admin;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;

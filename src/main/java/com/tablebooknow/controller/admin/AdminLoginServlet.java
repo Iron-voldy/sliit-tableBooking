@@ -2,10 +2,9 @@ package com.tablebooknow.controller.admin;
 
 import com.tablebooknow.dao.AdminDAO;
 import com.tablebooknow.dao.UserDAO;
-import com.tablebooknow.model.admin.Admin;
 import com.tablebooknow.model.user.User;
 import com.tablebooknow.util.PasswordHasher;
-
+import com.tablebooknow.model.admin.Admin;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;

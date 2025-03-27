@@ -6,7 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Select Dining Time | Gourmet Reserve</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dateSelection.css">
+        <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dateSelection.css">
+    <style>
+    /* Copy the contents of dateSelection.css directly here */
+    :root {
+        --gold: #D4AF37;
+        --burgundy: #800020;
+        --dark: #1a1a1a;
+        --text: #e0e0e0;
+        --glass: rgba(255, 255, 255, 0.05);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    /* Rest of the CSS content */
+    </style>
 </head>
 <body>
     <%
