@@ -12,63 +12,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* Payment Dashboard CSS */
+
         :root {
             --gold: #D4AF37;
             --burgundy: #800020;
             --dark: #1a1a1a;
             --text: #e0e0e0;
             --glass: rgba(255, 255, 255, 0.05);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: var(--dark);
-            font-family: 'Roboto', sans-serif;
-            background-image:
-                linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)),
-                url('${pageContext.request.contextPath}/assets/img/restaurant-bg.jpg');
-            background-size: cover;
-            background-position: center;
-        }
-
-        .payment-dashboard {
-            width: 90%;
-            max-width: 800px;
-            background: rgba(26, 26, 26, 0.95);
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            display: flex;
-            flex-direction: column;
-        }
-
-        .dashboard-header {
-            padding: 2rem;
-            background: linear-gradient(135deg, rgba(128, 0, 32, 0.8), rgba(26, 26, 26, 0.8));
-            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
-            text-align: center;
-        }
-
-        .dashboard-title {
-            font-family: 'Playfair Display', serif;
-            color: var(--gold);
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .dashboard-subtitle {
-            color: var(--text);
-            opacity: 0.9;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --info: #3498db;
+            --warning: #f1c40f;
         }
 
         .dashboard-content {
@@ -90,7 +45,7 @@
 
         .payment-methods {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 1.5rem;
             margin-bottom: 1rem;
         }
@@ -160,6 +115,7 @@
         .card-actions {
             margin-top: 1rem;
             display: flex;
+            flex-wrap: wrap;
             gap: 0.5rem;
         }
 
@@ -171,19 +127,37 @@
             cursor: pointer;
             opacity: 0.7;
             transition: all 0.3s;
+            padding: 0.3rem 0.5rem;
+            border-radius: 4px;
         }
 
         .card-btn:hover {
             opacity: 1;
-            color: var(--gold);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .btn-edit {
-            color: #3498db;
+            color: var(--info);
+        }
+
+        .btn-edit:hover {
+            background: rgba(52, 152, 219, 0.1);
         }
 
         .btn-delete {
-            color: #e74c3c;
+            color: var(--danger);
+        }
+
+        .btn-delete:hover {
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .set-default-btn {
+            color: var(--warning);
+        }
+
+        .set-default-btn:hover {
+            background: rgba(241, 196, 15, 0.1);
         }
 
         .new-card-form {
@@ -191,14 +165,13 @@
             border-radius: 12px;
             padding: 1.5rem;
             border: 1px solid rgba(212, 175, 55, 0.2);
-            transition: height 0.3s;
+            transition: all 0.3s;
             display: none;
-            overflow: hidden;
+            animation: slideDown 0.3s ease-out;
         }
 
         .new-card-form.visible {
             display: block;
-            animation: slideDown 0.3s;
         }
 
         @keyframes slideDown {
@@ -270,6 +243,7 @@
         .toggle-form-btn:hover {
             background: rgba(212, 175, 55, 0.1);
             color: var(--gold);
+            transform: translateY(-2px);
         }
 
         .btn-icon {
@@ -373,22 +347,23 @@
         }
 
         .error-message {
-            color: #ff4444;
+            color: var(--danger);
             margin-top: 1rem;
             text-align: center;
-            background: rgba(255, 68, 68, 0.1);
+            background: rgba(231, 76, 60, 0.1);
             padding: 1rem;
             border-radius: 8px;
             animation: shake 0.5s ease-in-out;
         }
 
         .success-message {
-            color: #2ecc71;
+            color: var(--success);
             margin-top: 1rem;
             text-align: center;
             background: rgba(46, 204, 113, 0.1);
             padding: 1rem;
             border-radius: 8px;
+            animation: fadeIn 0.5s ease-out;
         }
 
         .message {
@@ -399,6 +374,11 @@
             0%, 100% { transform: translateX(0); }
             20%, 60% { transform: translateX(-5px); }
             40%, 80% { transform: translateX(5px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Modal styles */
@@ -413,6 +393,7 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            backdrop-filter: blur(3px);
         }
 
         .modal {
@@ -423,6 +404,20 @@
             padding: 2rem;
             border: 1px solid rgba(212, 175, 55, 0.3);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            animation: modalAppear 0.3s forwards;
+        }
+
+        @keyframes modalAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         .modal-header {
@@ -475,6 +470,7 @@
 
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
         }
 
         .btn-danger {
@@ -484,23 +480,21 @@
         }
 
         .btn-danger:hover {
-            background: #e74c3c;
+            background: var(--danger);
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
         }
 
-        /* ANIMATION FOR PAGE LOAD */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
+        /* Animation for page load */
         .animated {
             animation: fadeIn 0.6s ease-out forwards;
         }
 
+        /* Responsive styles */
         @media (max-width: 768px) {
             .payment-dashboard {
                 width: 95%;
+                margin: 20px 0;
             }
 
             .dashboard-content {
@@ -514,6 +508,17 @@
             .form-row {
                 flex-direction: column;
                 gap: 0;
+            }
+
+            .card-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .card-btn {
+                width: 100%;
+                padding: 0.5rem;
+                text-align: center;
             }
         }
     </style>
@@ -707,7 +712,7 @@
                 <button type="submit" class="proceed-btn" id="proceedBtn" disabled>Proceed to Payment</button>
             </form>
 
-            <a href="${pageContext.request.contextPath}/tableSelection.jsp" class="back-link">Back to Table Selection</a>
+            <a href="${pageContext.request.contextPath}/reservation/dateSelection" class="back-link">Back to Table Selection</a>
         </div>
     </div>
 
@@ -725,6 +730,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Load the CSS and JS dynamically after the critical content is loaded -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/payment-dashboard.css">
 
     <script>
         // Store this data from JSP for use in JavaScript
@@ -751,18 +759,11 @@
             const proceedBtn = document.getElementById('proceedBtn');
             const selectedCardIdInput = document.getElementById('selectedCardId');
             const noCardsMessage = document.getElementById('noCardsMessage');
+            const editCardIdInput = document.getElementById('editCardId');
+            const formActionInput = document.getElementById('formAction');
+            const saveCardBtn = document.getElementById('saveCardBtn');
 
-            console.log("Elements initialized:", {
-                toggleFormBtn,
-                newCardForm,
-                cardForm,
-                paymentCardsContainer,
-                deleteModal,
-                confirmDeleteBtn,
-                proceedBtn,
-                selectedCardIdInput,
-                noCardsMessage
-            });
+            console.log("Elements initialized");
 
             // Form toggle functionality
             toggleFormBtn.addEventListener('click', function() {
@@ -771,6 +772,11 @@
 
                 if (newCardForm.classList.contains('visible')) {
                     toggleFormBtn.innerHTML = '<i class="fas fa-minus btn-icon"></i> Close Form';
+
+                    // If we were editing, reset the form
+                    if (isEditingCard) {
+                        resetCardForm();
+                    }
                 } else {
                     toggleFormBtn.innerHTML = '<i class="fas fa-plus btn-icon"></i> Add New Payment Method';
                     // Reset form
@@ -792,15 +798,13 @@
                 const formData = new FormData(cardForm);
 
                 // Show loading state
-                const saveBtn = document.getElementById('saveCardBtn');
-                saveBtn.textContent = 'Saving...';
-                saveBtn.disabled = true;
+                saveCardBtn.textContent = isEditingCard ? 'Updating...' : 'Saving...';
+                saveCardBtn.disabled = true;
 
                 // Determine the URL based on whether we're editing or adding
-                let url = appContextPath + '/paymentcard';
-                if (isEditingCard) {
-                    url = appContextPath + '/paymentcard/update';
-                }
+                let url = isEditingCard ?
+                    `${appContextPath}/paymentcard/update` :
+                    `${appContextPath}/paymentcard`;
 
                 // Send AJAX request
                 fetch(url, {
@@ -815,16 +819,38 @@
                 })
                 .then(data => {
                     console.log("Card saved successfully");
-                    // Reload the page to refresh the card list
-                    location.reload();
+
+                    // Show success message before reload
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message success-message';
+                    messageDiv.textContent = isEditingCard ?
+                        'Payment method updated successfully' :
+                        'Payment method added successfully';
+
+                    // Insert at the beginning of content
+                    const dashboardContent = document.querySelector('.dashboard-content');
+                    dashboardContent.insertBefore(messageDiv, dashboardContent.firstChild);
+
+                    // Reload the page after a brief delay to show the message
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to save card: ' + error.message);
+
+                    // Show error message
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message error-message';
+                    messageDiv.textContent = 'Failed to save card: ' + error.message;
+
+                    // Insert at the beginning of content
+                    const dashboardContent = document.querySelector('.dashboard-content');
+                    dashboardContent.insertBefore(messageDiv, dashboardContent.firstChild);
 
                     // Reset button state
-                    saveBtn.textContent = isEditingCard ? 'Update Card' : 'Save Card';
-                    saveBtn.disabled = false;
+                    saveCardBtn.textContent = isEditingCard ? 'Update Card' : 'Save Card';
+                    saveCardBtn.disabled = false;
                 });
             });
 
@@ -877,265 +903,365 @@
                     console.log("Deleting card:", cardToDelete);
 
                     // Send delete request
-                    fetch(appContextPath + '/paymentcard/delete?cardId=' + cardToDelete, {
+                    fetch(`${appContextPath}/paymentcard/delete?cardId=${cardToDelete}`, {
                         method: 'POST'
                     })
                     .then(response => {
-                                            if (!response.ok) {
-                                                throw new Error('Network response was not ok');
-                                            }
-                                            // Reload page to refresh the card list
-                                            location.reload();
-                                        })
-                                        .catch(error => {
-                                            console.error('Error deleting card:', error);
-                                            alert('Failed to delete card: ' + error.message);
-                                        });
-                                    }
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
 
-                                    // Close the modal
-                                    hideDeleteModal();
-                                });
+                        // Show success message before reload
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = 'message success-message';
+                        messageDiv.textContent = 'Payment method deleted successfully';
 
-                                // Payment form submission
-                                document.getElementById('paymentForm').addEventListener('submit', function(e) {
-                                    // Check if a card is selected
-                                    if (!selectedCardIdInput.value) {
-                                        e.preventDefault();
-                                        alert('Please select a payment method');
-                                        return false;
-                                    }
+                        // Insert at the beginning of content
+                        const dashboardContent = document.querySelector('.dashboard-content');
+                        dashboardContent.insertBefore(messageDiv, dashboardContent.firstChild);
 
-                                    // Proceed with submission - disable button to prevent double-submission
-                                    proceedBtn.textContent = 'Processing...';
-                                    proceedBtn.disabled = true;
-                                    return true;
-                                });
+                        // Reload page after a brief delay
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    })
+                    .catch(error => {
+                        console.error('Error deleting card:', error);
 
-                                // Initialize the card display
-                                renderCards();
-                            });
+                        // Show error message
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = 'message error-message';
+                        messageDiv.textContent = 'Failed to delete card: ' + error.message;
 
-                            // Functions
+                        // Insert at the beginning of content
+                        const dashboardContent = document.querySelector('.dashboard-content');
+                        dashboardContent.insertBefore(messageDiv, dashboardContent.firstChild);
 
-                            // Render all cards
-                            function renderCards() {
-                                const paymentCardsContainer = document.getElementById('paymentCardsContainer');
-                                const noCardsMessage = document.getElementById('noCardsMessage');
-                                const proceedBtn = document.getElementById('proceedBtn');
+                        // Close the modal
+                        hideDeleteModal();
+                    });
+                }
 
-                                // Clear container
-                                paymentCardsContainer.innerHTML = '';
+                // Close the modal
+                hideDeleteModal();
+            });
 
-                                if (!paymentCards || paymentCards.length === 0) {
-                                    // Show no cards message
-                                    paymentCardsContainer.appendChild(noCardsMessage);
-                                    proceedBtn.disabled = true;
-                                    return;
-                                }
+            // Set default card function
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.classList.contains('set-default-btn')) {
+                    const cardId = e.target.getAttribute('data-card-id');
+                    if (!cardId) return;
 
-                                // Hide no cards message
-                                noCardsMessage.style.display = 'none';
+                    console.log("Setting card as default:", cardId);
 
-                                // Enable proceed button
-                                proceedBtn.disabled = false;
+                    // Send request to set as default
+                    fetch(`${appContextPath}/paymentcard/setdefault?cardId=${cardId}`, {
+                        method: 'POST'
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
 
-                                // Add cards to container
-                                paymentCards.forEach(card => {
-                                    const cardElement = createCardElement(card);
-                                    paymentCardsContainer.appendChild(cardElement);
-                                });
+                        // Show success message before reload
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = 'message success-message';
+                        messageDiv.textContent = 'Default payment method updated';
 
-                                // Select default card
-                                const defaultCard = paymentCards.find(card =>
-                                    card.defaultCard === true || card.isDefault === true);
+                        // Insert at the beginning of content
+                        const dashboardContent = document.querySelector('.dashboard-content');
+                        dashboardContent.insertBefore(messageDiv, dashboardContent.firstChild);
 
-                                if (defaultCard) {
-                                    selectCard(defaultCard.id);
-                                } else if (paymentCards.length > 0) {
-                                    // Select first card if no default
-                                    selectCard(paymentCards[0].id);
-                                }
-                            }
+                        // Reload page after a brief delay
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    })
+                    .catch(error => {
+                        console.error('Error setting default card:', error);
 
-                            // Create HTML card element
-                            function createCardElement(card) {
-                                const cardElement = document.createElement('div');
-                                cardElement.className = 'payment-card';
-                                cardElement.dataset.cardId = card.id;
+                        // Show error message
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = 'message error-message';
+                        messageDiv.textContent = 'Failed to set default card: ' + error.message;
 
-                                // Determine card icon class
-                                let cardIconClass = 'fa-credit-card';
-                                if (card.cardType === 'visa') {
-                                    cardIconClass = 'fa-cc-visa';
-                                } else if (card.cardType === 'mastercard') {
-                                    cardIconClass = 'fa-cc-mastercard';
-                                } else if (card.cardType === 'amex') {
-                                    cardIconClass = 'fa-cc-amex';
-                                } else if (card.cardType === 'discover') {
-                                    cardIconClass = 'fa-cc-discover';
-                                }
+                        // Insert at the beginning of content
+                        const dashboardContent = document.querySelector('.dashboard-content');
+                        dashboardContent.insertBefore(messageDiv, dashboardContent.firstChild);
+                    });
+                }
+            });
 
-                                // Format card type display
-                                const cardTypeName = card.cardType.charAt(0).toUpperCase() + card.cardType.slice(1);
+            // Payment form submission
+            document.getElementById('paymentForm').addEventListener('submit', function(e) {
+                // Check if a card is selected
+                if (!selectedCardIdInput.value) {
+                    e.preventDefault();
+                    alert('Please select a payment method');
+                    return false;
+                }
 
-                                // Get last 4 digits of card number
-                                const last4 = card.maskedCardNumber ?
-                                    card.maskedCardNumber.replace(/\s/g, '').slice(-4) :
-                                    (card.cardNumber ? card.cardNumber.slice(-4) : '****');
+                // Proceed with submission - disable button to prevent double-submission
+                proceedBtn.textContent = 'Processing...';
+                proceedBtn.disabled = true;
+                return true;
+            });
 
-                                // Set HTML content
-                                cardElement.innerHTML = `
-                                    ${(card.defaultCard || card.isDefault) ? '<div class="card-badge">Default</div>' : ''}
-                                    <div class="card-type">
-                                        <i class="fab ${cardIconClass} card-icon"></i>
-                                        <span class="card-name">${cardTypeName}</span>
-                                    </div>
-                                    <div class="card-number">**** **** **** ${last4}</div>
-                                    <div class="card-expiry">Expires: ${card.expiryDate}</div>
-                                    <div class="card-actions">
-                                        <button class="card-btn btn-edit" onclick="editCard('${card.id}')">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </button>
-                                        <button class="card-btn btn-delete" onclick="showDeleteModal('${card.id}')">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </button>
-                                    </div>
-                                `;
+            // Initialize the card display
+            renderCards();
+        });
 
-                                // Add click event for card selection
-                                cardElement.addEventListener('click', function(e) {
-                                    // Don't select if clicking on buttons
-                                    if (e.target.closest('.card-actions')) {
-                                        return;
-                                    }
+        // Functions
 
-                                    selectCard(card.id);
-                                });
+        // Render all cards
+        function renderCards() {
+            const paymentCardsContainer = document.getElementById('paymentCardsContainer');
+            const noCardsMessage = document.getElementById('noCardsMessage');
+            const proceedBtn = document.getElementById('proceedBtn');
 
-                                return cardElement;
-                            }
+            // Clear container
+            paymentCardsContainer.innerHTML = '';
 
-                            // Select a card
-                            function selectCard(cardId) {
-                                // Remove selected class from all cards
-                                document.querySelectorAll('.payment-card').forEach(cardElem => {
-                                    cardElem.classList.remove('selected');
-                                });
+            if (!paymentCards || paymentCards.length === 0) {
+                // Show no cards message
+                paymentCardsContainer.appendChild(noCardsMessage);
+                proceedBtn.disabled = true;
+                return;
+            }
 
-                                // Add selected class to this card
-                                const cardElement = document.querySelector(`.payment-card[data-card-id="${cardId}"]`);
-                                if (cardElement) {
-                                    cardElement.classList.add('selected');
+            // Hide no cards message
+            noCardsMessage.style.display = 'none';
 
-                                    // Update hidden input value
-                                    document.getElementById('selectedCardId').value = cardId;
-                                }
-                            }
+            // Enable proceed button
+            proceedBtn.disabled = false;
 
-                            // Show delete confirmation modal
-                            function showDeleteModal(id) {
-                                cardToDelete = id;
-                                document.getElementById('deleteModal').style.display = 'flex';
-                            }
+            // Add cards to container
+            paymentCards.forEach(card => {
+                const cardElement = createCardElement(card);
+                paymentCardsContainer.appendChild(cardElement);
+            });
 
-                            // Hide delete confirmation modal
-                            function hideDeleteModal() {
-                                document.getElementById('deleteModal').style.display = 'none';
-                                cardToDelete = null;
-                            }
+            // Select default card
+            const defaultCard = paymentCards.find(card => card.defaultCard === true);
 
-                            // Edit a card
-                            function editCard(cardId) {
-                                // Find the card in the array
-                                const card = paymentCards.find(c => c.id === cardId);
-                                if (!card) {
-                                    console.error("Card not found:", cardId);
-                                    return;
-                                }
+            if (defaultCard) {
+                selectCard(defaultCard.id);
+            } else if (paymentCards.length > 0) {
+                // Select first card if no default
+                selectCard(paymentCards[0].id);
+            }
+        }
 
-                                console.log("Editing card:", card);
+        // Create HTML card element
+        function createCardElement(card) {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'payment-card';
+            cardElement.dataset.cardId = card.id;
 
-                                // Show the form
-                                const newCardForm = document.getElementById('newCardForm');
-                                const toggleFormBtn = document.getElementById('toggleFormBtn');
+            // Determine card icon class
+            let cardIconClass = 'fa-credit-card';
+            if (card.cardType === 'visa') {
+                cardIconClass = 'fa-cc-visa';
+            } else if (card.cardType === 'mastercard') {
+                cardIconClass = 'fa-cc-mastercard';
+            } else if (card.cardType === 'amex') {
+                cardIconClass = 'fa-cc-amex';
+            } else if (card.cardType === 'discover') {
+                cardIconClass = 'fa-cc-discover';
+            }
 
-                                newCardForm.classList.add('visible');
-                                toggleFormBtn.innerHTML = '<i class="fas fa-minus btn-icon"></i> Close Form';
+            // Format card type display
+            const cardTypeName = card.cardType.charAt(0).toUpperCase() + card.cardType.slice(1);
 
-                                // Update form action and button text
-                                document.getElementById('formAction').value = 'update';
-                                document.getElementById('editCardId').value = cardId;
-                                document.getElementById('saveCardBtn').textContent = 'Update Card';
+            // Get last 4 digits of card number
+            const last4 = card.cardNumber ? card.cardNumber.replace(/\s/g, '').slice(-4) : '****';
 
-                                // Fill form with card data
-                                document.getElementById('cardholderName').value = card.cardholderName || '';
-                                // Don't populate full card number for security reasons
-                                document.getElementById('cardNumber').value = '';
-                                document.getElementById('expiryDate').value = card.expiryDate || '';
-                                document.getElementById('cvv').value = ''; // Don't populate CVV for security reasons
-                                document.getElementById('cardType').value = card.cardType || '';
-                                document.getElementById('makeDefault').checked = card.defaultCard || card.isDefault || false;
+            // Set HTML content
+            cardElement.innerHTML = `
+                ${card.defaultCard ? '<div class="card-badge">Default</div>' : ''}
+                <div class="card-type">
+                    <i class="fab ${cardIconClass} card-icon"></i>
+                    <span class="card-name">${cardTypeName}</span>
+                </div>
+                <div class="card-number">**** **** **** ${last4}</div>
+                <div class="card-expiry">Expires: ${card.expiryDate}</div>
+                <div class="card-actions">
+                    <button class="card-btn btn-edit" onclick="editCard('${card.id}')">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="card-btn btn-delete" onclick="showDeleteModal('${card.id}')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                    ${!card.defaultCard ?
+                      `<button class="card-btn set-default-btn" data-card-id="${card.id}">
+                          <i class="fas fa-star"></i> Set Default
+                       </button>` :
+                      ''}
+                </div>
+            `;
 
-                                // Set editing state
-                                isEditingCard = true;
-                            }
+            // Add click event for card selection
+            cardElement.addEventListener('click', function(e) {
+                // Don't select if clicking on buttons
+                if (e.target.closest('.card-actions')) {
+                    return;
+                }
 
-                            // Reset card form to add new mode
-                            function resetCardForm() {
-                                const cardForm = document.getElementById('cardForm');
-                                cardForm.reset();
+                selectCard(card.id);
+            });
 
-                                document.getElementById('formAction').value = 'add';
-                                document.getElementById('editCardId').value = '';
-                                document.getElementById('saveCardBtn').textContent = 'Save Card';
+            return cardElement;
+        }
 
-                                isEditingCard = false;
-                            }
+        // Select a card
+        function selectCard(cardId) {
+            // Remove selected class from all cards
+            document.querySelectorAll('.payment-card').forEach(cardElem => {
+                cardElem.classList.remove('selected');
+            });
 
-                            // Validate card form
-                            function validateCardForm() {
-                                const cardholderName = document.getElementById('cardholderName').value;
-                                const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
-                                const expiryDate = document.getElementById('expiryDate').value;
-                                const cvv = document.getElementById('cvv').value;
-                                const cardType = document.getElementById('cardType').value;
+            // Add selected class to this card
+            const cardElement = document.querySelector(`.payment-card[data-card-id="${cardId}"]`);
+            if (cardElement) {
+                cardElement.classList.add('selected');
 
-                                // When editing, we don't require card number and CVV
-                                if (isEditingCard) {
-                                    if (!cardholderName || !expiryDate || !cardType) {
-                                        alert('Please fill in all required fields');
-                                        return false;
-                                    }
-                                    return true;
-                                }
+                // Update hidden input value
+                document.getElementById('selectedCardId').value = cardId;
 
-                                // Basic validation for new card
-                                if (!cardholderName || !cardNumber || !expiryDate || !cvv || !cardType) {
-                                    alert('Please fill in all fields');
-                                    return false;
-                                }
+                // Enable proceed button
+                document.getElementById('proceedBtn').disabled = false;
+            }
+        }
 
-                                // Validate card number format (13-19 digits)
-                                if (!/^\d{13,19}$/.test(cardNumber)) {
-                                    alert('Please enter a valid card number');
-                                    return false;
-                                }
+        // Show delete confirmation modal
+        function showDeleteModal(id) {
+            cardToDelete = id;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
 
-                                // Validate expiry date
-                                if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
-                                    alert('Please enter a valid expiry date (MM/YY)');
-                                    return false;
-                                }
+        // Hide delete confirmation modal
+        function hideDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            cardToDelete = null;
+        }
 
-                                // Validate CVV (3-4 digits)
-                                if (!/^\d{3,4}$/.test(cvv)) {
-                                    alert('Please enter a valid CVV');
-                                    return false;
-                                }
+        // Edit a card
+        function editCard(cardId) {
+            // Find the card in the array
+            const card = paymentCards.find(c => c.id === cardId);
+            if (!card) {
+                console.error("Card not found:", cardId);
+                return;
+            }
 
-                                return true;
-                            }
-                        </script>
-                    </body>
-                    </html>
+            console.log("Editing card:", card);
+
+            // Show the form
+            const newCardForm = document.getElementById('newCardForm');
+            const toggleFormBtn = document.getElementById('toggleFormBtn');
+
+            newCardForm.classList.add('visible');
+            toggleFormBtn.innerHTML = '<i class="fas fa-minus btn-icon"></i> Close Form';
+
+            // Update form action and button text
+            document.getElementById('formAction').value = 'update';
+            document.getElementById('editCardId').value = cardId;
+            document.getElementById('saveCardBtn').textContent = 'Update Card';
+
+            // Fill form with card data
+            document.getElementById('cardholderName').value = card.cardholderName || '';
+            document.getElementById('cardNumber').value = ''; // Don't populate full card number for security reasons
+            document.getElementById('expiryDate').value = card.expiryDate || '';
+            document.getElementById('cvv').value = ''; // Don't populate CVV for security reasons
+            document.getElementById('cardType').value = card.cardType || '';
+            document.getElementById('makeDefault').checked = card.defaultCard || false;
+
+            // Set editing state
+            isEditingCard = true;
+
+            // Scroll to the form
+            newCardForm.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Reset card form to add new mode
+        function resetCardForm() {
+            const cardForm = document.getElementById('cardForm');
+            cardForm.reset();
+
+            document.getElementById('formAction').value = 'add';
+            document.getElementById('editCardId').value = '';
+            document.getElementById('saveCardBtn').textContent = 'Save Card';
+
+            isEditingCard = false;
+        }
+
+        // Validate card form
+        function validateCardForm() {
+            const cardholderName = document.getElementById('cardholderName').value;
+            const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+            const expiryDate = document.getElementById('expiryDate').value;
+            const cvv = document.getElementById('cvv').value;
+            const cardType = document.getElementById('cardType').value;
+
+            // When editing, we don't require card number and CVV
+            if (isEditingCard) {
+                if (!cardholderName || !expiryDate || !cardType) {
+                    alert('Please fill in all required fields');
+                    return false;
+                }
+
+                // Validate expiry date
+                if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+                    alert('Please enter a valid expiry date (MM/YY)');
+                    return false;
+                }
+
+                // If CVV is provided, validate it
+                if (cvv && !/^\d{3,4}$/.test(cvv)) {
+                    alert('Please enter a valid CVV (3-4 digits)');
+                    return false;
+                }
+
+                return true;
+            }
+
+            // Basic validation for new card
+            if (!cardholderName || !cardNumber || !expiryDate || !cvv || !cardType) {
+                alert('Please fill in all fields');
+                return false;
+            }
+
+            // Validate card number format (13-19 digits)
+            if (!/^\d{13,19}$/.test(cardNumber)) {
+                alert('Please enter a valid card number (13-19 digits)');
+                return false;
+            }
+
+            // Validate expiry date
+            if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+                alert('Please enter a valid expiry date (MM/YY)');
+                return false;
+            }
+
+            // Validate expiry date is not in the past
+            const [month, year] = expiryDate.split('/').map(part => parseInt(part, 10));
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear() % 100; // Get last 2 digits
+            const currentMonth = currentDate.getMonth() + 1; // Months are 0-indexed
+
+            if (year < currentYear || (year === currentYear && month < currentMonth)) {
+                alert('Card has expired. Please enter a valid expiry date.');
+                return false;
+            }
+
+            // Validate CVV (3-4 digits)
+            if (!/^\d{3,4}$/.test(cvv)) {
+                alert('Please enter a valid CVV (3-4 digits)');
+                return false;
+            }
+
+            return true;
+        }
+    </script>
+</body>
+</html>

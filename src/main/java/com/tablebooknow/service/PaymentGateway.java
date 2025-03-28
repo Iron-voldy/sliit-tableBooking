@@ -1,8 +1,10 @@
 package com.tablebooknow.service;
 
 import com.tablebooknow.model.payment.Payment;
+import com.tablebooknow.model.payment.PaymentCard;
 import com.tablebooknow.model.reservation.Reservation;
 import com.tablebooknow.model.user.User;
+import com.tablebooknow.dao.PaymentCardDAO;
 
 import java.math.BigDecimal;
 import java.security.MessageDigest;
@@ -50,18 +52,19 @@ public class PaymentGateway {
      * @return The calculated price
      */
     public BigDecimal calculateAmount(String tableType, int duration) {
-        BigDecimal basePrice = TABLE_PRICES.getOrDefault(tableType, new BigDecimal("100.00"));
+        BigDecimal basePrice = TABLE_PRICES.getOrDefault(tableType, new BigDecimal("8.00"));
         return basePrice.multiply(new BigDecimal(duration));
     }
 
     /**
-     * Generate PayHere form parameters for the payment
+     * Generate PayHere form parameters for the payment, including card details if available
      * @param payment The payment object
      * @param reservation The reservation object
      * @param user The user making the payment
      * @param returnUrl URL to return to after payment
      * @param cancelUrl URL to return to if payment is cancelled
      * @param notifyUrl URL for PayHere to send payment notification
+     * @param paymentCardId Optional payment card ID to pre-fill card details
      * @return Map of form parameters
      */
     public Map<String, String> generateFormParameters(
@@ -70,7 +73,8 @@ public class PaymentGateway {
             User user,
             String returnUrl,
             String cancelUrl,
-            String notifyUrl
+            String notifyUrl,
+            String paymentCardId
     ) {
         Map<String, String> params = new HashMap<>();
 
@@ -106,6 +110,40 @@ public class PaymentGateway {
         // Custom parameters for your reference
         params.put("custom_1", reservation.getId());
         params.put("custom_2", user.getId());
+
+        // Add payment card details if provided
+        if (paymentCardId != null && !paymentCardId.isEmpty()) {
+            try {
+                PaymentCardDAO paymentCardDAO = new PaymentCardDAO();
+                PaymentCard card = paymentCardDAO.findById(paymentCardId);
+
+                if (card != null) {
+                    // Set the payment card as custom_3
+                    params.put("custom_3", card.getId());
+
+                    // Pre-fill card information for PayHere (if supported by the gateway)
+                    params.put("card_holder_name", card.getCardholderName());
+
+                    // Only provide masked card number for security
+                    String lastFour = card.getCardNumber().substring(Math.max(0, card.getCardNumber().length() - 4));
+                    params.put("card_no", "************" + lastFour);
+
+                    // Format expiry date MM/YY to separate month and year fields
+                    if (card.getExpiryDate() != null && card.getExpiryDate().contains("/")) {
+                        String[] expiryParts = card.getExpiryDate().split("/");
+                        if (expiryParts.length == 2) {
+                            params.put("card_expiry_month", expiryParts[0]);
+                            params.put("card_expiry_year", "20" + expiryParts[1]); // Assuming YY format
+                        }
+                    }
+
+                    System.out.println("Payment card details added to payment parameters");
+                }
+            } catch (Exception e) {
+                System.err.println("Error retrieving payment card details: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
 
         // Generate hash - this is critical for PayHere validation
         String hash = generateHash(

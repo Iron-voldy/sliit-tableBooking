@@ -11,7 +11,6 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 
-
 /**
  * Servlet for handling payment card operations
  */
@@ -230,7 +229,7 @@ public class PaymentCardServlet extends HttpServlet {
                 // Set all other cards to non-default first
                 List<PaymentCard> existingCards = paymentCardDAO.findByUserId(userId);
                 for (PaymentCard existingCard : existingCards) {
-                    if (existingCard.isDefaultCard()) {
+                    if (existingCard.isDefaultCard() && !existingCard.getId().equals(card.getId())) {
                         existingCard.setDefaultCard(false);
                         paymentCardDAO.update(existingCard);
                     }
@@ -386,6 +385,11 @@ public class PaymentCardServlet extends HttpServlet {
 
             // Store the card ID in session for the payment process
             request.getSession().setAttribute("paymentCardId", card.getId());
+
+            // Also store card info for payment process (masked for security)
+            request.getSession().setAttribute("cardholderName", card.getCardholderName());
+            request.getSession().setAttribute("cardType", card.getCardType());
+            request.getSession().setAttribute("cardLast4", card.getCardNumber().substring(card.getCardNumber().length() - 4));
 
             // Redirect to the payment processing servlet
             response.sendRedirect(request.getContextPath() + "/payment/process");
