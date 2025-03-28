@@ -288,11 +288,13 @@
                 saveCardBtn.textContent = isEditingCard ? 'Updating...' : 'Saving...';
                 saveCardBtn.disabled = true;
 
-                // Determine the URL based on whether we're editing or adding
-                // Fix: Use the full context path in the URLs
-                let url = isEditingCard ?
-                    `${appContextPath}/paymentcard/update` :
-                    `${appContextPath}/paymentcard`;
+                // Use the absolute URL with context path
+                let url = '';
+                if (isEditingCard) {
+                    url = appContextPath + "/paymentcard/update";
+                } else {
+                    url = appContextPath + "/paymentcard";
+                }
 
                 // Convert FormData to URL-encoded string for easier debugging
                 const urlEncodedData = new URLSearchParams(formData).toString();
@@ -399,7 +401,7 @@
                     console.log("Deleting card:", cardToDelete);
 
                     // Create the URL with the cardId parameter and proper context path
-                    const url = `${appContextPath}/paymentcard/delete?cardId=${cardToDelete}`;
+                    const url = `${appContextPath}/paymentcard/delete`;
                     console.log("Delete URL:", url);
 
                     // Send delete request
@@ -407,7 +409,8 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
-                        }
+                        },
+                        body: `cardId=${cardToDelete}`
                     })
                     .then(response => {
                         console.log("Delete response status:", response.status);
@@ -463,11 +466,12 @@
                     console.log("Setting card as default:", cardId);
 
                     // Send request to set as default with proper context path
-                    fetch(`${appContextPath}/paymentcard/setdefault?cardId=${cardId}`, {
+                    fetch(`${appContextPath}/paymentcard/setdefault`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
-                        }
+                        },
+                        body: `cardId=${cardId}`
                     })
                     .then(response => {
                         console.log("Set default response status:", response.status);
@@ -789,7 +793,7 @@
             }
 
             return true;
-        }
-    </script>
-</body>
-</html>
+            }
+                </script>
+            </body>
+            </html>
