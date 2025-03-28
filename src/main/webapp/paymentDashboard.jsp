@@ -3,7 +3,6 @@
 <%@ page import="com.tablebooknow.model.payment.PaymentCard" %>
 <%@ page import="com.tablebooknow.util.GsonFactory" %>
 <%@ page import="com.google.gson.Gson" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,7 +13,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* Payment Dashboard CSS */
-
         :root {
             --gold: #D4AF37;
             --burgundy: #800020;
@@ -25,6 +23,60 @@
             --danger: #e74c3c;
             --info: #3498db;
             --warning: #f1c40f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--dark);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-image:
+                linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)),
+                url('${pageContext.request.contextPath}/assets/img/restaurant-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            padding: 20px;
+        }
+
+        .payment-dashboard {
+            width: 90%;
+            max-width: 900px;
+            background: rgba(26, 26, 26, 0.95);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            margin: 20px auto;
+        }
+
+        .dashboard-header {
+            padding: 2rem;
+            background: linear-gradient(135deg, rgba(128, 0, 32, 0.8), rgba(26, 26, 26, 0.8));
+            text-align: center;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+        }
+
+        .dashboard-title {
+            font-family: 'Playfair Display', serif;
+            color: var(--gold);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-subtitle {
+            color: var(--text);
+            opacity: 0.9;
         }
 
         .dashboard-content {
@@ -579,7 +631,7 @@
         // Get payment cards for this user
         List<PaymentCard> paymentCards = (List<PaymentCard>) request.getAttribute("paymentCards");
 
-        // Convert payment cards to JSON for JavaScript using our custom adapter
+        // Convert payment cards to JSON for JavaScript
         Gson gson = GsonFactory.createGson();
         String paymentCardsJson = "[]";
         if (paymentCards != null && !paymentCards.isEmpty()) {
@@ -713,7 +765,7 @@
                 <button type="submit" class="proceed-btn" id="proceedBtn" disabled>Proceed to Payment</button>
             </form>
 
-            <a href="${pageContext.request.contextPath}/reservation/dateSelection" class="back-link">Back to Table Selection</a>
+            <a href="${pageContext.request.contextPath}/reservation/tableSelection" class="back-link">Back to Table Selection</a>
         </div>
     </div>
 
@@ -731,9 +783,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Load the CSS and JS dynamically after the critical content is loaded -->
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/payment-dashboard.css">
 
     <script>
         // Store this data from JSP for use in JavaScript
@@ -1077,29 +1126,32 @@
             // Get last 4 digits of card number
             const last4 = card.cardNumber ? card.cardNumber.replace(/\s/g, '').slice(-4) : '****';
 
-            // Set HTML content
-            cardElement.innerHTML = `
-                ${card.defaultCard ? '<div class="card-badge">Default</div>' : ''}
-                <div class="card-type">
-                    <i class="fab ${cardIconClass} card-icon"></i>
-                    <span class="card-name">${cardTypeName}</span>
-                </div>
-                <div class="card-number">**** **** **** ${last4}</div>
-                <div class="card-expiry">Expires: ${card.expiryDate}</div>
-                <div class="card-actions">
-                    <button class="card-btn btn-edit" onclick="editCard('${card.id}')">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="card-btn btn-delete" onclick="showDeleteModal('${card.id}')">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
-                   <c:if test="${!card.defaultCard}">
-                       <button class="card-btn set-default-btn" data-card-id="${card.id}">
-                           <i class="fas fa-star"></i> Set Default
-                       </button>
-                   </c:if>
-                </div>
-            `;
+            // Create card inner HTML
+            cardElement.innerHTML =
+                (card.defaultCard ? '<div class="card-badge">Default</div>' : '') +
+                '<div class="card-type">' +
+                    '<i class="fab ' + cardIconClass + ' card-icon"></i>' +
+                    '<span class="card-name">' + cardTypeName + '</span>' +
+                '</div>' +
+                '<div class="card-number">**** **** **** ' + last4 + '</div>' +
+                '<div class="card-expiry">Expires: ' + card.expiryDate + '</div>' +
+                '<div class="card-actions">' +
+                    '<button class="card-btn btn-edit" onclick="editCard(\'' + card.id + '\')">' +
+                        '<i class="fas fa-edit"></i> Edit' +
+                    '</button>' +
+                    '<button class="card-btn btn-delete" onclick="showDeleteModal(\'' + card.id + '\')">' +
+                        '<i class="fas fa-trash"></i> Delete' +
+                    '</button>';
+
+            // Only add "Set Default" button if not already default
+            if (!card.defaultCard) {
+                cardElement.innerHTML +=
+                    '<button class="card-btn set-default-btn" data-card-id="' + card.id + '">' +
+                        '<i class="fas fa-star"></i> Set Default' +
+                    '</button>';
+            }
+
+            cardElement.innerHTML += '</div>';
 
             // Add click event for card selection
             cardElement.addEventListener('click', function(e) {

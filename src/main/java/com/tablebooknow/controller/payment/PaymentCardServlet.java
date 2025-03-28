@@ -175,15 +175,15 @@ public class PaymentCardServlet extends HttpServlet {
             // Save the card
             paymentCardDAO.create(card);
 
-            // Redirect back to dashboard with success message
-            request.setAttribute("successMessage", "Payment card added successfully");
-            request.getRequestDispatcher("/paymentcard/dashboard").forward(request, response);
+            // Return success response
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("Card added successfully");
 
         } catch (Exception e) {
             System.err.println("Error adding payment card: " + e.getMessage());
             e.printStackTrace();
-            request.setAttribute("errorMessage", "Error adding payment card: " + e.getMessage());
-            request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Error adding payment card: " + e.getMessage());
         }
     }
 
@@ -202,8 +202,8 @@ public class PaymentCardServlet extends HttpServlet {
 
             // Verify the card belongs to the user
             if (card == null || !card.getUserId().equals(userId)) {
-                request.setAttribute("errorMessage", "Card not found or access denied");
-                request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("Card not found or access denied");
                 return;
             }
 
@@ -240,15 +240,15 @@ public class PaymentCardServlet extends HttpServlet {
             // Save changes
             paymentCardDAO.update(card);
 
-            // Redirect back to dashboard with success message
-            request.setAttribute("successMessage", "Payment card updated successfully");
-            request.getRequestDispatcher("/paymentcard/dashboard").forward(request, response);
+            // Return success response
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("Card updated successfully");
 
         } catch (Exception e) {
             System.err.println("Error updating payment card: " + e.getMessage());
             e.printStackTrace();
-            request.setAttribute("errorMessage", "Error updating payment card: " + e.getMessage());
-            request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Error updating payment card: " + e.getMessage());
         }
     }
 
@@ -262,8 +262,8 @@ public class PaymentCardServlet extends HttpServlet {
 
             // Verify the card belongs to the user
             if (card == null || !card.getUserId().equals(userId)) {
-                request.setAttribute("errorMessage", "Card not found or access denied");
-                request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("Card not found or access denied");
                 return;
             }
 
@@ -283,15 +283,15 @@ public class PaymentCardServlet extends HttpServlet {
                 }
             }
 
-            // Redirect back to dashboard with success message
-            request.setAttribute("successMessage", "Payment card deleted successfully");
-            request.getRequestDispatcher("/paymentcard/dashboard").forward(request, response);
+            // Return success response
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("Card deleted successfully");
 
         } catch (Exception e) {
             System.err.println("Error deleting payment card: " + e.getMessage());
             e.printStackTrace();
-            request.setAttribute("errorMessage", "Error deleting payment card: " + e.getMessage());
-            request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Error deleting payment card: " + e.getMessage());
         }
     }
 
@@ -305,8 +305,8 @@ public class PaymentCardServlet extends HttpServlet {
 
             // Verify the card belongs to the user
             if (card == null || !card.getUserId().equals(userId)) {
-                request.setAttribute("errorMessage", "Card not found or access denied");
-                request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("Card not found or access denied");
                 return;
             }
 
@@ -323,15 +323,15 @@ public class PaymentCardServlet extends HttpServlet {
             card.setDefaultCard(true);
             paymentCardDAO.update(card);
 
-            // Redirect back to dashboard with success message
-            request.setAttribute("successMessage", "Default payment method updated");
-            request.getRequestDispatcher("/paymentcard/dashboard").forward(request, response);
+            // Return success response
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().write("Default payment method updated");
 
         } catch (Exception e) {
             System.err.println("Error setting default payment card: " + e.getMessage());
             e.printStackTrace();
-            request.setAttribute("errorMessage", "Error setting default payment card: " + e.getMessage());
-            request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Error setting default payment card: " + e.getMessage());
         }
     }
 
@@ -346,8 +346,8 @@ public class PaymentCardServlet extends HttpServlet {
             }
 
             if (reservationId == null) {
-                request.setAttribute("errorMessage", "Reservation ID is missing");
-                request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("Reservation ID is missing");
                 return;
             }
 
@@ -358,8 +358,8 @@ public class PaymentCardServlet extends HttpServlet {
 
                 // Verify the card belongs to the user
                 if (card == null || !card.getUserId().equals(userId)) {
-                    request.setAttribute("errorMessage", "Invalid payment method");
-                    request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write("Invalid payment method");
                     return;
                 }
             } else {
@@ -377,8 +377,8 @@ public class PaymentCardServlet extends HttpServlet {
                 }
 
                 if (card == null) {
-                    request.setAttribute("errorMessage", "No payment method selected or available");
-                    request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    response.getWriter().write("No payment method selected or available");
                     return;
                 }
             }
@@ -397,8 +397,8 @@ public class PaymentCardServlet extends HttpServlet {
         } catch (Exception e) {
             System.err.println("Error processing payment with card: " + e.getMessage());
             e.printStackTrace();
-            request.setAttribute("errorMessage", "Error processing payment: " + e.getMessage());
-            request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("Error processing payment: " + e.getMessage());
         }
     }
 }

@@ -61,8 +61,8 @@ public class PaymentServlet extends HttpServlet {
         }
 
         if (pathInfo == null || pathInfo.equals("/")) {
-            // Default payment page
-            response.sendRedirect(request.getContextPath() + "/payment.jsp");
+            // Default payment page - redirect to payment dashboard
+            response.sendRedirect(request.getContextPath() + "/paymentcard/dashboard");
             return;
         }
 
@@ -81,7 +81,7 @@ public class PaymentServlet extends HttpServlet {
                 break;
             default:
                 System.out.println("Unknown path: " + pathInfo);
-                response.sendRedirect(request.getContextPath() + "/payment.jsp");
+                response.sendRedirect(request.getContextPath() + "/paymentcard/dashboard");
                 break;
         }
     }
@@ -126,7 +126,7 @@ public class PaymentServlet extends HttpServlet {
                 break;
             default:
                 System.out.println("Unknown path: " + pathInfo);
-                response.sendRedirect(request.getContextPath() + "/payment.jsp");
+                response.sendRedirect(request.getContextPath() + "/paymentcard/dashboard");
                 break;
         }
     }
@@ -140,6 +140,9 @@ public class PaymentServlet extends HttpServlet {
         HttpSession session = request.getSession();
         String userId = (String) session.getAttribute("userId");
 
+        // Get payment card ID from session
+        String paymentCardId = (String) session.getAttribute("paymentCardId");
+
         // Get reservation from session
         String reservationId = (String) session.getAttribute("reservationId");
         if (reservationId == null) {
@@ -148,7 +151,7 @@ public class PaymentServlet extends HttpServlet {
 
         if (reservationId == null) {
             System.out.println("No reservation ID found, redirecting to date selection");
-            response.sendRedirect(request.getContextPath() + "/dateSelection.jsp");
+            response.sendRedirect(request.getContextPath() + "/reservation/dateSelection");
             return;
         }
 
@@ -156,14 +159,14 @@ public class PaymentServlet extends HttpServlet {
             Reservation reservation = reservationDAO.findById(reservationId);
             if (reservation == null) {
                 request.setAttribute("errorMessage", "Reservation not found");
-                request.getRequestDispatcher("/payment.jsp").forward(request, response);
+                request.getRequestDispatcher("/paymentcard/dashboard").forward(request, response);
                 return;
             }
 
             User user = userDAO.findById(userId);
             if (user == null) {
                 request.setAttribute("errorMessage", "User not found");
-                request.getRequestDispatcher("/payment.jsp").forward(request, response);
+                request.getRequestDispatcher("/paymentcard/dashboard").forward(request, response);
                 return;
             }
 
@@ -191,6 +194,19 @@ public class PaymentServlet extends HttpServlet {
             payment.setStatus("PENDING");
             payment.setPaymentGateway("PayHere");
 
+            // Set the payment method if we have a card
+            if (paymentCardId != null) {
+                try {
+                    PaymentCardDAO paymentCardDAO = new PaymentCardDAO();
+                    PaymentCard card = paymentCardDAO.findById(paymentCardId);
+                    if (card != null) {
+                        payment.setPaymentMethod("Card - " + card.getCardType().toUpperCase());
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error getting payment card details: " + e.getMessage());
+                }
+            }
+
             // Save payment to get an ID
             paymentDAO.create(payment);
 
@@ -207,36 +223,18 @@ public class PaymentServlet extends HttpServlet {
 
             // Generate form parameters for PayHere
             Map<String, String> params = paymentGateway.generateFormParameters(
-                    payment, reservation, user, returnUrl, cancelUrl, notifyUrl, null
+                    payment, reservation, user, returnUrl, cancelUrl, notifyUrl, paymentCardId
             );
-
-            // Check for a selected payment card
-            String paymentCardId = (String) session.getAttribute("paymentCardId");
-            if (paymentCardId != null) {
-                // You can load card details here if needed for payment gateway
-                try {
-                    PaymentCardDAO paymentCardDAO = new PaymentCardDAO();
-                    PaymentCard card = paymentCardDAO.findById(paymentCardId);
-
-                    if (card != null) {
-                        // Update the parameters with the card ID
-                        params.put("custom_3", card.getId());
-
-                        // If you want to store the card association with the payment
-                        payment.setPaymentMethod("Card - " + card.getCardType());
-                        paymentDAO.update(payment);
-
-                        System.out.println("Using payment card: " + card.getId() + " for payment: " + payment.getId());
-                    }
-                } catch (Exception e) {
-                    System.err.println("Error loading payment card: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            }
 
             // Store the parameters for the JSP to create the form
             request.setAttribute("paymentParams", params);
             request.setAttribute("checkoutUrl", paymentGateway.getCheckoutUrl());
+
+            // Check if this is a simulation request
+            String simulateParam = request.getParameter("simulatePayment");
+            if (simulateParam != null) {
+                request.setAttribute("simulatePayment", simulateParam);
+            }
 
             // Forward to payment processing JSP
             request.getRequestDispatcher("/paymentProcess.jsp").forward(request, response);
@@ -245,7 +243,7 @@ public class PaymentServlet extends HttpServlet {
             System.err.println("Error processing payment: " + e.getMessage());
             e.printStackTrace();
             request.setAttribute("errorMessage", "Error processing payment: " + e.getMessage());
-            request.getRequestDispatcher("/payment.jsp").forward(request, response);
+            request.getRequestDispatcher("/paymentcard/dashboard").forward(request, response);
         }
     }
 
@@ -258,7 +256,7 @@ public class PaymentServlet extends HttpServlet {
         HttpSession session = request.getSession();
         String userId = (String) session.getAttribute("userId");
 
-        // Debug all session attributes
+        // Debug info
         System.out.println("All session attributes:");
         Enumeration<String> attributeNames = session.getAttributeNames();
         while (attributeNames.hasMoreElements()) {
@@ -276,7 +274,7 @@ public class PaymentServlet extends HttpServlet {
 
         if (reservationId == null) {
             System.out.println("No reservation ID found, redirecting to date selection");
-            response.sendRedirect(request.getContextPath() + "/dateSelection.jsp");
+            response.sendRedirect(request.getContextPath() + "/reservation/dateSelection");
             return;
         }
 
@@ -310,12 +308,12 @@ public class PaymentServlet extends HttpServlet {
             // Continue to payment page anyway
         }
 
-        // Forward to payment dashboard instead of payment.jsp
+        // Redirect to payment dashboard
         System.out.println("Redirecting to payment dashboard");
         response.sendRedirect(request.getContextPath() + "/paymentcard/dashboard");
     }
 
-    // This code should be inserted into the handlePaymentSuccess method in PaymentServlet.java
+    // Handle successful payments
     private void handlePaymentSuccess(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.println("Payment success callback received");
 
@@ -380,6 +378,7 @@ public class PaymentServlet extends HttpServlet {
                                 if (typeChar == 'f') tableType = "family";
                                 else if (typeChar == 'l') tableType = "luxury";
                                 else if (typeChar == 'c') tableType = "couple";
+                                else if (typeChar == 'r') tableType = "regular";
                             }
 
                             BigDecimal amount = paymentGateway.calculateAmount(tableType, reservation.getDuration());
@@ -393,6 +392,14 @@ public class PaymentServlet extends HttpServlet {
                             payment.setTransactionId("SIM-" + System.currentTimeMillis());
                             payment.setPaymentGateway("Development Simulation");
                             payment.setCompletedAt(LocalDateTime.now());
+
+                            // Check if a payment method was selected
+                            String cardType = (String) session.getAttribute("cardType");
+                            if (cardType != null) {
+                                payment.setPaymentMethod("Card - " + cardType.toUpperCase());
+                            } else {
+                                payment.setPaymentMethod("Simulated Payment");
+                            }
 
                             paymentDAO.create(payment);
                             paymentId = payment.getId();
@@ -538,7 +545,7 @@ public class PaymentServlet extends HttpServlet {
 
             request.setAttribute("paymentSuccessful", true);
 
-            // Redirect to new confirmation page
+            // Redirect to confirmation page
             response.sendRedirect(request.getContextPath() + "/reservationConfirmation.jsp");
         } else {
             request.setAttribute("errorMessage", "We couldn't verify your payment. Please contact support.");
@@ -546,6 +553,7 @@ public class PaymentServlet extends HttpServlet {
             request.getRequestDispatcher("/paymentSuccess.jsp").forward(request, response);
         }
     }
+
     /**
      * Handle cancelled payment from PayHere
      */
@@ -569,7 +577,7 @@ public class PaymentServlet extends HttpServlet {
         }
 
         request.setAttribute("errorMessage", "Payment was cancelled. Please try again.");
-        request.getRequestDispatcher("/payment.jsp").forward(request, response);
+        request.getRequestDispatcher("/paymentcard/dashboard").forward(request, response);
     }
 
     /**

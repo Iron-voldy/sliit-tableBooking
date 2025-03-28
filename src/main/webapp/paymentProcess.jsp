@@ -86,6 +86,31 @@
             display: none;
         }
 
+        .card-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 0 auto 2rem;
+            max-width: 350px;
+            text-align: left;
+            color: var(--text);
+        }
+
+        .card-info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .card-info-label {
+            color: var(--gold);
+            font-size: 0.9rem;
+        }
+
+        .card-info-value {
+            font-weight: 500;
+        }
+
         .debug-info {
             margin-top: 20px;
             padding: 10px;
@@ -97,6 +122,20 @@
             max-height: 200px;
             overflow-y: auto;
             display: none;
+        }
+
+        .cancel-link {
+            color: rgba(255, 255, 255, 0.7);
+            display: inline-block;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .cancel-link:hover {
+            color: white;
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -123,6 +162,11 @@
             session.setAttribute("paymentId", orderId);
         }
 
+        // Get card information if available
+        String cardholderName = (String) session.getAttribute("cardholderName");
+        String cardType = (String) session.getAttribute("cardType");
+        String cardLast4 = (String) session.getAttribute("cardLast4");
+
         // For debugging - check simulation mode
         String simulatePayment = request.getParameter("simulatePayment");
         boolean isSimulation = "true".equals(simulatePayment);
@@ -130,7 +174,29 @@
 
     <div class="loader-container">
         <h1 class="loader-title">Processing Payment</h1>
-        <p class="loader-text">Please wait while we redirect you to our secure payment gateway...</p>
+        <p class="loader-text">Please wait while we process your payment...</p>
+
+        <% if (cardholderName != null && cardType != null && cardLast4 != null) { %>
+        <div class="card-info">
+            <div class="card-info-row">
+                <span class="card-info-label">Card Holder:</span>
+                <span class="card-info-value"><%= cardholderName %></span>
+            </div>
+            <div class="card-info-row">
+                <span class="card-info-label">Card Type:</span>
+                <span class="card-info-value"><%= cardType.substring(0, 1).toUpperCase() + cardType.substring(1) %></span>
+            </div>
+            <div class="card-info-row">
+                <span class="card-info-label">Card Number:</span>
+                <span class="card-info-value">**** **** **** <%= cardLast4 %></span>
+            </div>
+            <div class="card-info-row">
+                <span class="card-info-label">Amount:</span>
+                <span class="card-info-value">$<%= paymentParams.get("amount") %> <%= paymentParams.get("currency") %></span>
+            </div>
+        </div>
+        <% } %>
+
         <div class="spinner"></div>
 
         <% if (isSimulation) { %>
@@ -147,6 +213,8 @@
                 <input type="hidden" name="simulatePayment" value="true">
             <% } %>
         </form>
+
+        <a href="${pageContext.request.contextPath}/paymentcard/dashboard" class="cancel-link">Cancel</a>
 
         <!-- Debug information - only visible with debug parameter -->
         <%
@@ -174,12 +242,12 @@
                 setTimeout(function() {
                     window.location.href = "${pageContext.request.contextPath}/payment/success?simulatePayment=true&status_code=2&order_id=" +
                         "<%= paymentParams.get("order_id") %>";
-                }, 1500);
+                }, 2500);
             <% } else { %>
                 // For real PayHere integration
                 setTimeout(function() {
                     document.getElementById('paymentForm').submit();
-                }, 1500);
+                }, 2500);
             <% } %>
         });
     </script>

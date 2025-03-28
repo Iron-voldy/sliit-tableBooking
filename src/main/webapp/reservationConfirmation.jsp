@@ -20,7 +20,7 @@
             font-weight: bold;
             font-size: 2rem;
             color: #000;
-            margin-bottom: 10px;
+            margin: 0 auto 10px;
             border: 1px solid #ddd;
             position: relative;
             overflow: hidden;
@@ -84,6 +84,36 @@
         .qr-code.real-qr .qr-corner-tr,
         .qr-code.real-qr .qr-corner-bl {
             display: none;
+        }
+
+        .reservation-details {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .detail-label {
+            color: var(--gold);
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: white;
         }
 
         /* Print styling */
@@ -174,12 +204,12 @@
                 </div>
             </div>
 
-            <p class="instruction">A confirmation email has been sent to your registered email address with your reservation details and a QR code for check-in.</p>
+            <p class="instruction">Please arrive 15 minutes before your reservation time. A confirmation email has been sent to your registered email address.</p>
 
             <div class="qr-code-container">
                 <% if (qrCodeBase64 != null && !qrCodeBase64.isEmpty()) { %>
                     <div class="qr-code real-qr">
-                        <img src="data:image/png;base64,<%= qrCodeBase64 %>" alt="Reservation QR Code">
+                        <img src="<%= qrCodeBase64 %>" alt="Reservation QR Code">
                     </div>
                 <% } else { %>
                     <div class="qr-code">
