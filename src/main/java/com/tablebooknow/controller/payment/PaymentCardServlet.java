@@ -95,6 +95,12 @@ public class PaymentCardServlet extends HttpServlet {
 
         String userId = (String) session.getAttribute("userId");
 
+        // For debugging - log all parameters
+        System.out.println("Request parameters:");
+        for (String paramName : request.getParameterMap().keySet()) {
+            System.out.println(paramName + " = " + request.getParameter(paramName));
+        }
+
         if (pathInfo == null || pathInfo.equals("/")) {
             // Default - Add a new card
             addNewCard(request, response, userId);
@@ -138,8 +144,8 @@ public class PaymentCardServlet extends HttpServlet {
             // Basic validation
             if (cardholderName == null || cardNumber == null || expiryDate == null || cvv == null || cardType == null ||
                     cardholderName.isEmpty() || cardNumber.isEmpty() || expiryDate.isEmpty() || cvv.isEmpty() || cardType.isEmpty()) {
-                request.setAttribute("errorMessage", "All fields are required");
-                request.getRequestDispatcher("/paymentDashboard.jsp").forward(request, response);
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("All fields are required");
                 return;
             }
 
@@ -195,7 +201,11 @@ public class PaymentCardServlet extends HttpServlet {
             String expiryDate = request.getParameter("expiryDate");
             String cvv = request.getParameter("cvv");
             String cardType = request.getParameter("cardType");
+            String cardNumber = request.getParameter("cardNumber");
             boolean makeDefault = "true".equals(request.getParameter("makeDefault"));
+
+            System.out.println("Updating card ID: " + cardId);
+            System.out.println("Make default: " + makeDefault);
 
             // Find the card
             PaymentCard card = paymentCardDAO.findById(cardId);
@@ -222,6 +232,11 @@ public class PaymentCardServlet extends HttpServlet {
 
             if (cardType != null && !cardType.isEmpty()) {
                 card.setCardType(cardType);
+            }
+
+            // Update card number if provided
+            if (cardNumber != null && !cardNumber.isEmpty()) {
+                card.setCardNumber(cardNumber.replace(" ", ""));
             }
 
             // Handle default card status

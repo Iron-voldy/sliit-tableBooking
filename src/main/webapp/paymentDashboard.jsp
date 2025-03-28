@@ -11,570 +11,7 @@
     <title>Payment Dashboard | Gourmet Reserve</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        /* Payment Dashboard CSS */
-        :root {
-            --gold: #D4AF37;
-            --burgundy: #800020;
-            --dark: #1a1a1a;
-            --text: #e0e0e0;
-            --glass: rgba(255, 255, 255, 0.05);
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --info: #3498db;
-            --warning: #f1c40f;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Roboto', sans-serif;
-        }
-
-        body {
-            min-height: 100vh;
-            background: var(--dark);
-            color: var(--text);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-image:
-                linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)),
-                url('${pageContext.request.contextPath}/assets/img/restaurant-bg.jpg');
-            background-size: cover;
-            background-position: center;
-            padding: 20px;
-        }
-
-        .payment-dashboard {
-            width: 90%;
-            max-width: 900px;
-            background: rgba(26, 26, 26, 0.95);
-            border-radius: 20px;
-            overflow: hidden;
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            display: flex;
-            flex-direction: column;
-            margin: 20px auto;
-        }
-
-        .dashboard-header {
-            padding: 2rem;
-            background: linear-gradient(135deg, rgba(128, 0, 32, 0.8), rgba(26, 26, 26, 0.8));
-            text-align: center;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
-        }
-
-        .dashboard-title {
-            font-family: 'Playfair Display', serif;
-            color: var(--gold);
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .dashboard-subtitle {
-            color: var(--text);
-            opacity: 0.9;
-        }
-
-        .dashboard-content {
-            padding: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-            flex: 1;
-        }
-
-        .section-title {
-            font-family: 'Playfair Display', serif;
-            color: var(--gold);
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
-            padding-bottom: 0.5rem;
-        }
-
-        .payment-methods {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .payment-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 1.5rem;
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            transition: all 0.3s ease;
-            position: relative;
-            cursor: pointer;
-        }
-
-        .payment-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--gold);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-
-        .payment-card.selected {
-            border: 2px solid var(--gold);
-            background: rgba(212, 175, 55, 0.1);
-        }
-
-        .card-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: var(--gold);
-            color: var(--dark);
-            font-size: 0.7rem;
-            padding: 0.3rem 0.6rem;
-            border-radius: 10px;
-            font-weight: bold;
-        }
-
-        .card-type {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .card-icon {
-            font-size: 1.8rem;
-            margin-right: 0.8rem;
-            color: var(--gold);
-        }
-
-        .card-name {
-            font-weight: 500;
-            color: var(--text);
-        }
-
-        .card-number {
-            font-family: 'Courier New', monospace;
-            letter-spacing: 0.1rem;
-            margin-bottom: 1rem;
-            color: var(--text);
-        }
-
-        .card-expiry {
-            font-size: 0.9rem;
-            color: #aaa;
-        }
-
-        .card-actions {
-            margin-top: 1rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-
-        .card-btn {
-            background: none;
-            border: none;
-            color: var(--text);
-            font-size: 0.9rem;
-            cursor: pointer;
-            opacity: 0.7;
-            transition: all 0.3s;
-            padding: 0.3rem 0.5rem;
-            border-radius: 4px;
-        }
-
-        .card-btn:hover {
-            opacity: 1;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .btn-edit {
-            color: var(--info);
-        }
-
-        .btn-edit:hover {
-            background: rgba(52, 152, 219, 0.1);
-        }
-
-        .btn-delete {
-            color: var(--danger);
-        }
-
-        .btn-delete:hover {
-            background: rgba(231, 76, 60, 0.1);
-        }
-
-        .set-default-btn {
-            color: var(--warning);
-        }
-
-        .set-default-btn:hover {
-            background: rgba(241, 196, 15, 0.1);
-        }
-
-        .new-card-form {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 1.5rem;
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            transition: all 0.3s;
-            display: none;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        .new-card-form.visible {
-            display: block;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .form-group {
-            margin-bottom: 1.2rem;
-        }
-
-        .form-label {
-            display: block;
-            color: var(--gold);
-            margin-bottom: 0.5rem;
-            font-size: 0.9rem;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 0.8rem;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--gold);
-            box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
-        }
-
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .form-row .form-group {
-            flex: 1;
-            min-width: 120px;
-        }
-
-        .toggle-form-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            border-radius: 8px;
-            padding: 0.8rem 1.2rem;
-            color: var(--text);
-            font-size: 1rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .toggle-form-btn:hover {
-            background: rgba(212, 175, 55, 0.1);
-            color: var(--gold);
-            transform: translateY(-2px);
-        }
-
-        .btn-icon {
-            font-size: 1.2rem;
-        }
-
-        .save-card-btn {
-            width: 100%;
-            padding: 1rem;
-            background: linear-gradient(135deg, var(--gold), var(--burgundy));
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 0.5rem;
-        }
-
-        .save-card-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(128, 0, 32, 0.3);
-        }
-
-        .reservation-summary {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 1.5rem;
-            border: 1px solid rgba(212, 175, 55, 0.2);
-            margin-bottom: 1.5rem;
-        }
-
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .summary-item:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .summary-label {
-            color: #aaa;
-        }
-
-        .summary-value {
-            color: var(--text);
-            font-weight: 500;
-        }
-
-        .summary-value.highlight {
-            color: var(--gold);
-            font-size: 1.2rem;
-        }
-
-        .proceed-btn {
-            width: 100%;
-            padding: 1.2rem;
-            background: linear-gradient(135deg, var(--gold), var(--burgundy));
-            border: none;
-            border-radius: 10px;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            margin-top: 2rem;
-        }
-
-        .proceed-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
-        }
-
-        .proceed-btn:disabled {
-            background: #555;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .back-link {
-            display: block;
-            text-align: center;
-            margin-top: 1.5rem;
-            color: var(--text);
-            text-decoration: none;
-            font-size: 0.9rem;
-            opacity: 0.8;
-            transition: opacity 0.3s;
-        }
-
-        .back-link:hover {
-            opacity: 1;
-            color: var(--gold);
-        }
-
-        .error-message {
-            color: var(--danger);
-            margin-top: 1rem;
-            text-align: center;
-            background: rgba(231, 76, 60, 0.1);
-            padding: 1rem;
-            border-radius: 8px;
-            animation: shake 0.5s ease-in-out;
-        }
-
-        .success-message {
-            color: var(--success);
-            margin-top: 1rem;
-            text-align: center;
-            background: rgba(46, 204, 113, 0.1);
-            padding: 1rem;
-            border-radius: 8px;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .message {
-            margin-bottom: 1.5rem;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-5px); }
-            40%, 80% { transform: translateX(5px); }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Modal styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(3px);
-        }
-
-        .modal {
-            background: rgba(26, 26, 26, 0.95);
-            border-radius: 15px;
-            width: 90%;
-            max-width: 500px;
-            padding: 2rem;
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            transform: scale(0.95);
-            transition: transform 0.3s ease;
-            animation: modalAppear 0.3s forwards;
-        }
-
-        @keyframes modalAppear {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-title {
-            font-family: 'Playfair Display', serif;
-            color: var(--gold);
-            font-size: 1.5rem;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: var(--text);
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .close-btn:hover {
-            color: var(--gold);
-            transform: rotate(90deg);
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .modal-btn {
-            padding: 0.8rem 1.2rem;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--text);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .btn-danger {
-            background: rgba(231, 76, 60, 0.8);
-            color: white;
-            border: none;
-        }
-
-        .btn-danger:hover {
-            background: var(--danger);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
-        }
-
-        /* Animation for page load */
-        .animated {
-            animation: fadeIn 0.6s ease-out forwards;
-        }
-
-        /* Responsive styles */
-        @media (max-width: 768px) {
-            .payment-dashboard {
-                width: 95%;
-                margin: 20px 0;
-            }
-
-            .dashboard-content {
-                padding: 1.5rem;
-            }
-
-            .payment-methods {
-                grid-template-columns: 1fr;
-            }
-
-            .form-row {
-                flex-direction: column;
-                gap: 0;
-            }
-
-            .card-actions {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .card-btn {
-                width: 100%;
-                padding: 0.5rem;
-                text-align: center;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/payment-dashboard.css">
 </head>
 <body>
     <%
@@ -704,7 +141,7 @@
                 </button>
 
                 <div id="newCardForm" class="new-card-form">
-                    <form id="cardForm" action="${pageContext.request.contextPath}/paymentcard" method="post">
+                    <form id="cardForm">
                         <input type="hidden" name="action" value="add" id="formAction">
                         <input type="hidden" name="cardId" id="editCardId">
 
@@ -856,19 +293,27 @@
                     `${appContextPath}/paymentcard/update` :
                     `${appContextPath}/paymentcard`;
 
-                // Send AJAX request
+                // Convert FormData to URL-encoded string for easier debugging
+                const urlEncodedData = new URLSearchParams(formData).toString();
+                console.log("Sending data:", urlEncodedData);
+
+                // Send AJAX request using fetch API
                 fetch(url, {
                     method: 'POST',
-                    body: new URLSearchParams(formData)
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: urlEncodedData
                 })
                 .then(response => {
+                    console.log("Response status:", response.status);
                     if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                        throw new Error(`Server returned ${response.status} ${response.statusText}`);
                     }
                     return response.text();
                 })
                 .then(data => {
-                    console.log("Card saved successfully");
+                    console.log("Card saved successfully:", data);
 
                     // Show success message before reload
                     const messageDiv = document.createElement('div');
@@ -883,7 +328,7 @@
 
                     // Reload the page after a brief delay to show the message
                     setTimeout(() => {
-                        location.reload();
+                        window.location.reload();
                     }, 1000);
                 })
                 .catch(error => {
@@ -952,14 +397,26 @@
                 if (cardToDelete) {
                     console.log("Deleting card:", cardToDelete);
 
+                    // Create the URL with the cardId parameter
+                    const url = `${appContextPath}/paymentcard/delete?cardId=${cardToDelete}`;
+                    console.log("Delete URL:", url);
+
                     // Send delete request
-                    fetch(`${appContextPath}/paymentcard/delete?cardId=${cardToDelete}`, {
-                        method: 'POST'
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        }
                     })
                     .then(response => {
+                        console.log("Delete response status:", response.status);
                         if (!response.ok) {
-                            throw new Error('Network response was not ok');
+                            throw new Error(`Server returned ${response.status} ${response.statusText}`);
                         }
+                        return response.text();
+                    })
+                    .then(data => {
+                        console.log("Delete response data:", data);
 
                         // Show success message before reload
                         const messageDiv = document.createElement('div');
@@ -972,7 +429,7 @@
 
                         // Reload page after a brief delay
                         setTimeout(() => {
-                            location.reload();
+                            window.location.reload();
                         }, 1000);
                     })
                     .catch(error => {
@@ -996,7 +453,7 @@
                 hideDeleteModal();
             });
 
-            // Set default card function
+            // Set default card functionality
             document.addEventListener('click', function(e) {
                 if (e.target && e.target.classList.contains('set-default-btn')) {
                     const cardId = e.target.getAttribute('data-card-id');
@@ -1006,12 +463,20 @@
 
                     // Send request to set as default
                     fetch(`${appContextPath}/paymentcard/setdefault?cardId=${cardId}`, {
-                        method: 'POST'
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        }
                     })
                     .then(response => {
+                        console.log("Set default response status:", response.status);
                         if (!response.ok) {
-                            throw new Error('Network response was not ok');
+                            throw new Error(`Server returned ${response.status} ${response.statusText}`);
                         }
+                        return response.text();
+                    })
+                    .then(data => {
+                        console.log("Set default response data:", data);
 
                         // Show success message before reload
                         const messageDiv = document.createElement('div');
@@ -1024,7 +489,7 @@
 
                         // Reload page after a brief delay
                         setTimeout(() => {
-                            location.reload();
+                            window.location.reload();
                         }, 1000);
                     })
                     .catch(error => {
@@ -1126,32 +591,47 @@
             // Get last 4 digits of card number
             const last4 = card.cardNumber ? card.cardNumber.replace(/\s/g, '').slice(-4) : '****';
 
-            // Create card inner HTML
-            cardElement.innerHTML =
-                (card.defaultCard ? '<div class="card-badge">Default</div>' : '') +
-                '<div class="card-type">' +
-                    '<i class="fab ' + cardIconClass + ' card-icon"></i>' +
-                    '<span class="card-name">' + cardTypeName + '</span>' +
-                '</div>' +
-                '<div class="card-number">**** **** **** ' + last4 + '</div>' +
-                '<div class="card-expiry">Expires: ' + card.expiryDate + '</div>' +
-                '<div class="card-actions">' +
-                    '<button class="card-btn btn-edit" onclick="editCard(\'' + card.id + '\')">' +
-                        '<i class="fas fa-edit"></i> Edit' +
-                    '</button>' +
-                    '<button class="card-btn btn-delete" onclick="showDeleteModal(\'' + card.id + '\')">' +
-                        '<i class="fas fa-trash"></i> Delete' +
-                    '</button>';
+            // Create card inner HTML without using template literals (backticks)
+            let innerHtml = '';
 
-            // Only add "Set Default" button if not already default
+            // Add default badge if needed
+            if (card.defaultCard) {
+                innerHtml += '<div class="card-badge">Default</div>';
+            }
+
+            // Add card type section
+            innerHtml += '<div class="card-type">' +
+                '<i class="fab ' + cardIconClass + ' card-icon"></i>' +
+                '<span class="card-name">' + cardTypeName + '</span>' +
+                '</div>';
+
+            // Add card number section
+            innerHtml += '<div class="card-number">**** **** **** ' + last4 + '</div>';
+
+            // Add expiry date
+            innerHtml += '<div class="card-expiry">Expires: ' + card.expiryDate + '</div>';
+
+            // Add action buttons
+            innerHtml += '<div class="card-actions">' +
+                '<button class="card-btn btn-edit" onclick="editCard(\'' + card.id + '\')">' +
+                '<i class="fas fa-edit"></i> Edit' +
+                '</button>' +
+                '<button class="card-btn btn-delete" onclick="showDeleteModal(\'' + card.id + '\')">' +
+                '<i class="fas fa-trash"></i> Delete' +
+                '</button>';
+
+            // Add "Set Default" button if not already default
             if (!card.defaultCard) {
-                cardElement.innerHTML +=
-                    '<button class="card-btn set-default-btn" data-card-id="' + card.id + '">' +
-                        '<i class="fas fa-star"></i> Set Default' +
+                innerHtml += '<button class="card-btn set-default-btn" data-card-id="' + card.id + '">' +
+                    '<i class="fas fa-star"></i> Set Default' +
                     '</button>';
             }
 
-            cardElement.innerHTML += '</div>';
+            // Close action buttons div
+            innerHtml += '</div>';
+
+            // Set the HTML
+            cardElement.innerHTML = innerHtml;
 
             // Add click event for card selection
             cardElement.addEventListener('click', function(e) {
@@ -1174,7 +654,7 @@
             });
 
             // Add selected class to this card
-            const cardElement = document.querySelector(`.payment-card[data-card-id="${cardId}"]`);
+            const cardElement = document.querySelector('.payment-card[data-card-id="' + cardId + '"]');
             if (cardElement) {
                 cardElement.classList.add('selected');
 
