@@ -86,6 +86,12 @@ public class PaymentCardServlet extends HttpServlet {
         String pathInfo = request.getPathInfo();
         System.out.println("POST request to paymentcard: " + pathInfo);
 
+        // Debug all parameters
+        System.out.println("All parameters received:");
+        request.getParameterMap().forEach((key, values) -> {
+            System.out.println(key + ": " + String.join(", ", values));
+        });
+
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userId") == null) {
             System.out.println("User not logged in, redirecting to login page");
@@ -95,22 +101,30 @@ public class PaymentCardServlet extends HttpServlet {
 
         String userId = (String) session.getAttribute("userId");
 
-        // For debugging - log all parameters
-        System.out.println("Request parameters:");
-        for (String paramName : request.getParameterMap().keySet()) {
-            System.out.println(paramName + " = " + request.getParameter(paramName));
-        }
-
-        // Handle operations based on path or action parameter
-        if (pathInfo == null || pathInfo.equals("/")) {
-            // Default - Add a new card if no action specified
-            String action = request.getParameter("action");
-            if (action == null || action.isEmpty()) {
-                addNewCard(request, response, userId);
+        // DIRECT HANDLING FOR SPECIFIC PATHS
+        if (pathInfo != null) {
+            if (pathInfo.equals("/delete")) {
+                System.out.println("Processing delete request with cardId: " + request.getParameter("cardId"));
+                deleteCard(request, response, userId);
+                return;
+            } else if (pathInfo.equals("/setdefault")) {
+                System.out.println("Processing set default request with cardId: " + request.getParameter("cardId"));
+                setDefaultCard(request, response, userId);
+                return;
+            } else if (pathInfo.equals("/process")) {
+                System.out.println("Processing payment request");
+                processPaymentWithCard(request, response, userId);
+                return;
+            } else if (pathInfo.equals("/update")) {
+                System.out.println("Processing update request");
+                updateCard(request, response, userId);
                 return;
             }
+        }
 
-            // Otherwise, use the action parameter
+        // Default - Add a new card or use action parameter
+        String action = request.getParameter("action");
+        if (action != null) {
             if ("update".equals(action)) {
                 updateCard(request, response, userId);
                 return;
@@ -120,27 +134,11 @@ public class PaymentCardServlet extends HttpServlet {
             } else if ("setdefault".equals(action)) {
                 setDefaultCard(request, response, userId);
                 return;
-            } else {
-                // Default is to add new card
-                addNewCard(request, response, userId);
-                return;
             }
-        } else if (pathInfo.equals("/update")) {
-            updateCard(request, response, userId);
-            return;
-        } else if (pathInfo.equals("/delete")) {
-            deleteCard(request, response, userId);
-            return;
-        } else if (pathInfo.equals("/setdefault")) {
-            setDefaultCard(request, response, userId);
-            return;
-        } else if (pathInfo.equals("/process")) {
-            processPaymentWithCard(request, response, userId);
-            return;
         }
 
-        // Unknown path - redirect to dashboard
-        response.sendRedirect(request.getContextPath() + "/paymentcard/dashboard");
+        // Default action if no specific path or action matched
+        addNewCard(request, response, userId);
     }
 
     private void addNewCard(HttpServletRequest request, HttpServletResponse response, String userId) throws ServletException, IOException {
@@ -283,9 +281,17 @@ public class PaymentCardServlet extends HttpServlet {
         try {
             // Get card ID
             String cardId = request.getParameter("cardId");
+            System.out.println("Processing delete for card ID: " + cardId);
+
+            if (cardId == null || cardId.isEmpty()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("Card ID is required");
+                return;
+            }
 
             // Find the card
             PaymentCard card = paymentCardDAO.findById(cardId);
+            System.out.println("Found card: " + (card != null ? card.getId() : "null"));
 
             // Verify the card belongs to the user
             if (card == null || !card.getUserId().equals(userId)) {
@@ -296,9 +302,17 @@ public class PaymentCardServlet extends HttpServlet {
 
             // Check if this is the default card
             boolean wasDefault = card.isDefaultCard();
+            System.out.println("Was default card: " + wasDefault);
 
             // Delete the card
-            paymentCardDAO.delete(cardId);
+            boolean deleted = paymentCardDAO.delete(cardId);
+            System.out.println("Card deleted: " + deleted);
+
+            if (!deleted) {
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                response.getWriter().write("Failed to delete card");
+                return;
+            }
 
             // If we deleted the default card, make another card default
             if (wasDefault) {
@@ -307,6 +321,7 @@ public class PaymentCardServlet extends HttpServlet {
                     PaymentCard newDefault = remainingCards.get(0);
                     newDefault.setDefaultCard(true);
                     paymentCardDAO.update(newDefault);
+                    System.out.println("Set new default card: " + newDefault.getId());
                 }
             }
 
@@ -326,6 +341,13 @@ public class PaymentCardServlet extends HttpServlet {
         try {
             // Get card ID
             String cardId = request.getParameter("cardId");
+            System.out.println("Setting default card: " + cardId);
+
+            if (cardId == null || cardId.isEmpty()) {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                response.getWriter().write("Card ID is required");
+                return;
+            }
 
             // Find the card
             PaymentCard card = paymentCardDAO.findById(cardId);

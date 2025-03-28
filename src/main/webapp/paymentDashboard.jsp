@@ -196,7 +196,7 @@
             </div>
 
             <!-- Proceed to Payment Button -->
-            <form action="${pageContext.request.contextPath}/paymentcard/process" method="post" id="paymentForm">
+            <form action="${pageContext.request.contextPath}/payment/process" method="post" id="paymentForm">
                 <input type="hidden" name="reservationId" value="<%= reservationId %>">
                 <input type="hidden" name="cardId" id="selectedCardId" value="">
                 <button type="submit" class="proceed-btn" id="proceedBtn" disabled>Proceed to Payment</button>
@@ -401,8 +401,9 @@
                     console.log("Deleting card:", cardToDelete);
 
                     // Create the URL with the cardId parameter and proper context path
-                    const url = `${appContextPath}/paymentcard/delete`;
-                    console.log("Delete URL:", url);
+                   const url = appContextPath + "/paymentcard/delete";
+                           console.log("Full Delete URL:", url);
+
 
                     // Send delete request
                     fetch(url, {
@@ -642,158 +643,158 @@
             cardElement.addEventListener('click', function(e) {
                 // Don't select if clicking on buttons
                 if (e.target.closest('.card-actions')) {
-                    return;
-                }
-
-                selectCard(card.id);
-            });
-
-            return cardElement;
-        }
-
-        // Select a card
-        function selectCard(cardId) {
-            // Remove selected class from all cards
-            document.querySelectorAll('.payment-card').forEach(cardElem => {
-                cardElem.classList.remove('selected');
-            });
-
-            // Add selected class to this card
-            const cardElement = document.querySelector('.payment-card[data-card-id="' + cardId + '"]');
-            if (cardElement) {
-                cardElement.classList.add('selected');
-
-                // Update hidden input value
-                document.getElementById('selectedCardId').value = cardId;
-
-                // Enable proceed button
-                document.getElementById('proceedBtn').disabled = false;
-            }
-        }
-
-        // Show delete confirmation modal
-        function showDeleteModal(id) {
-            cardToDelete = id;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
-
-        // Hide delete confirmation modal
-        function hideDeleteModal() {
-            document.getElementById('deleteModal').style.display = 'none';
-            cardToDelete = null;
-        }
-
-        // Edit a card
-        function editCard(cardId) {
-            // Find the card in the array
-            const card = paymentCards.find(c => c.id === cardId);
-            if (!card) {
-                console.error("Card not found:", cardId);
                 return;
-            }
+                                }
 
-            console.log("Editing card:", card);
+                                selectCard(card.id);
+                            });
 
-            // Show the form
-            const newCardForm = document.getElementById('newCardForm');
-            const toggleFormBtn = document.getElementById('toggleFormBtn');
+                            return cardElement;
+                        }
 
-            newCardForm.classList.add('visible');
-            toggleFormBtn.innerHTML = '<i class="fas fa-minus btn-icon"></i> Close Form';
+                        // Select a card
+                        function selectCard(cardId) {
+                            // Remove selected class from all cards
+                            document.querySelectorAll('.payment-card').forEach(cardElem => {
+                                cardElem.classList.remove('selected');
+                            });
 
-            // Update form action and button text
-            document.getElementById('formAction').value = 'update';
-            document.getElementById('editCardId').value = cardId;
-            document.getElementById('saveCardBtn').textContent = 'Update Card';
+                            // Add selected class to this card
+                            const cardElement = document.querySelector('.payment-card[data-card-id="' + cardId + '"]');
+                            if (cardElement) {
+                                cardElement.classList.add('selected');
 
-            // Fill form with card data
-            document.getElementById('cardholderName').value = card.cardholderName || '';
-            document.getElementById('cardNumber').value = ''; // Don't populate full card number for security reasons
-            document.getElementById('expiryDate').value = card.expiryDate || '';
-            document.getElementById('cvv').value = ''; // Don't populate CVV for security reasons
-            document.getElementById('cardType').value = card.cardType || '';
-            document.getElementById('makeDefault').checked = card.defaultCard || false;
+                                // Update hidden input value
+                                document.getElementById('selectedCardId').value = cardId;
 
-            // Set editing state
-            isEditingCard = true;
+                                // Enable proceed button
+                                document.getElementById('proceedBtn').disabled = false;
+                            }
+                        }
 
-            // Scroll to the form
-            newCardForm.scrollIntoView({ behavior: 'smooth' });
-        }
+                        // Show delete confirmation modal
+                        function showDeleteModal(id) {
+                            cardToDelete = id;
+                            document.getElementById('deleteModal').style.display = 'flex';
+                        }
 
-        // Reset card form to add new mode
-        function resetCardForm() {
-            const cardForm = document.getElementById('cardForm');
-            cardForm.reset();
+                        // Hide delete confirmation modal
+                        function hideDeleteModal() {
+                            document.getElementById('deleteModal').style.display = 'none';
+                            cardToDelete = null;
+                        }
 
-            document.getElementById('formAction').value = 'add';
-            document.getElementById('editCardId').value = '';
-            document.getElementById('saveCardBtn').textContent = 'Save Card';
+                        // Edit a card
+                        function editCard(cardId) {
+                            // Find the card in the array
+                            const card = paymentCards.find(c => c.id === cardId);
+                            if (!card) {
+                                console.error("Card not found:", cardId);
+                                return;
+                            }
 
-            isEditingCard = false;
-        }
+                            console.log("Editing card:", card);
 
-        // Validate card form
-        function validateCardForm() {
-            const cardholderName = document.getElementById('cardholderName').value;
-            const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
-            const expiryDate = document.getElementById('expiryDate').value;
-            const cvv = document.getElementById('cvv').value;
-            const cardType = document.getElementById('cardType').value;
+                            // Show the form
+                            const newCardForm = document.getElementById('newCardForm');
+                            const toggleFormBtn = document.getElementById('toggleFormBtn');
 
-            // When editing, we don't require card number and CVV
-            if (isEditingCard) {
-                if (!cardholderName || !expiryDate || !cardType) {
-                    alert('Please fill in all required fields');
-                    return false;
-                }
+                            newCardForm.classList.add('visible');
+                            toggleFormBtn.innerHTML = '<i class="fas fa-minus btn-icon"></i> Close Form';
 
-                // Validate expiry date
-                if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
-                    alert('Please enter a valid expiry date (MM/YY)');
-                    return false;
-                }
+                            // Update form action and button text
+                            document.getElementById('formAction').value = 'update';
+                            document.getElementById('editCardId').value = cardId;
+                            document.getElementById('saveCardBtn').textContent = 'Update Card';
 
-                // If CVV is provided, validate it
-                if (cvv && !/^\d{3,4}$/.test(cvv)) {
-                    alert('Please enter a valid CVV (3-4 digits)');
-                    return false;
-                }
+                            // Fill form with card data
+                            document.getElementById('cardholderName').value = card.cardholderName || '';
+                            document.getElementById('cardNumber').value = ''; // Don't populate full card number for security reasons
+                            document.getElementById('expiryDate').value = card.expiryDate || '';
+                            document.getElementById('cvv').value = ''; // Don't populate CVV for security reasons
+                            document.getElementById('cardType').value = card.cardType || '';
+                            document.getElementById('makeDefault').checked = card.defaultCard || false;
 
-                return true;
-            }
+                            // Set editing state
+                            isEditingCard = true;
 
-            // Basic validation for new card
-            if (!cardholderName || !cardNumber || !expiryDate || !cvv || !cardType) {
-                alert('Please fill in all fields');
-                return false;
-            }
+                            // Scroll to the form
+                            newCardForm.scrollIntoView({ behavior: 'smooth' });
+                        }
 
-            // Validate card number format (13-19 digits)
-            if (!/^\d{13,19}$/.test(cardNumber)) {
-                alert('Please enter a valid card number (13-19 digits)');
-                return false;
-            }
+                        // Reset card form to add new mode
+                        function resetCardForm() {
+                            const cardForm = document.getElementById('cardForm');
+                            cardForm.reset();
 
-            // Validate expiry date
-            if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
-                alert('Please enter a valid expiry date (MM/YY)');
-                return false;
-            }
+                            document.getElementById('formAction').value = 'add';
+                            document.getElementById('editCardId').value = '';
+                            document.getElementById('saveCardBtn').textContent = 'Save Card';
 
-            // Validate expiry date is not in the past
-            const [month, year] = expiryDate.split('/').map(part => parseInt(part, 10));
-            const currentDate = new Date();
-            const currentYear = currentDate.getFullYear() % 100; // Get last 2 digits
-            const currentMonth = currentDate.getMonth() + 1; // Months are 0-indexed
+                            isEditingCard = false;
+                        }
 
-            if (year < currentYear || (year === currentYear && month < currentMonth)) {
-                alert('Card has expired. Please enter a valid expiry date.');
-                return false;
-            }
+                        // Validate card form
+                        function validateCardForm() {
+                            const cardholderName = document.getElementById('cardholderName').value;
+                            const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+                            const expiryDate = document.getElementById('expiryDate').value;
+                            const cvv = document.getElementById('cvv').value;
+                            const cardType = document.getElementById('cardType').value;
 
-            return true;
-            }
-                </script>
-            </body>
-            </html>
+                            // When editing, we don't require card number and CVV
+                            if (isEditingCard) {
+                                if (!cardholderName || !expiryDate || !cardType) {
+                                    alert('Please fill in all required fields');
+                                    return false;
+                                }
+
+                                // Validate expiry date
+                                if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+                                    alert('Please enter a valid expiry date (MM/YY)');
+                                    return false;
+                                }
+
+                                // If CVV is provided, validate it
+                                if (cvv && !/^\d{3,4}$/.test(cvv)) {
+                                    alert('Please enter a valid CVV (3-4 digits)');
+                                    return false;
+                                }
+
+                                return true;
+                            }
+
+                            // Basic validation for new card
+                            if (!cardholderName || !cardNumber || !expiryDate || !cvv || !cardType) {
+                                alert('Please fill in all fields');
+                                return false;
+                            }
+
+                            // Validate card number format (13-19 digits)
+                            if (!/^\d{13,19}$/.test(cardNumber)) {
+                                alert('Please enter a valid card number (13-19 digits)');
+                                return false;
+                            }
+
+                            // Validate expiry date
+                            if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+                                alert('Please enter a valid expiry date (MM/YY)');
+                                return false;
+                            }
+
+                            // Validate expiry date is not in the past
+                            const [month, year] = expiryDate.split('/').map(part => parseInt(part, 10));
+                            const currentDate = new Date();
+                            const currentYear = currentDate.getFullYear() % 100; // Get last 2 digits
+                            const currentMonth = currentDate.getMonth() + 1; // Months are 0-indexed
+
+                            if (year < currentYear || (year === currentYear && month < currentMonth)) {
+                                alert('Card has expired. Please enter a valid expiry date.');
+                                return false;
+                            }
+
+                            return true;
+                        }
+                    </script>
+                </body>
+                </html>
