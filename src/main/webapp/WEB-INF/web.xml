@@ -17,14 +17,6 @@
     <url-pattern>*.css</url-pattern>
   </servlet-mapping>
 
-  <servlet>
-    <servlet-name>PaymentCardServlet</servlet-name>
-    <servlet-class>com.tablebooknow.controller.payment.PaymentCardServlet</servlet-class>
-  </servlet>
-  <servlet-mapping>
-    <servlet-name>PaymentCardServlet</servlet-name>
-    <url-pattern>/paymentcard/*</url-pattern>
-  </servlet-mapping>
 
   <!-- Session Configuration -->
   <session-config>
