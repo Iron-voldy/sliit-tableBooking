@@ -17,7 +17,6 @@
     <url-pattern>*.css</url-pattern>
   </servlet-mapping>
 
-
   <!-- Session Configuration -->
   <session-config>
     <session-timeout>30</session-timeout>

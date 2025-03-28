@@ -289,6 +289,7 @@
                 saveCardBtn.disabled = true;
 
                 // Determine the URL based on whether we're editing or adding
+                // Fix: Use the full context path in the URLs
                 let url = isEditingCard ?
                     `${appContextPath}/paymentcard/update` :
                     `${appContextPath}/paymentcard`;
@@ -397,7 +398,7 @@
                 if (cardToDelete) {
                     console.log("Deleting card:", cardToDelete);
 
-                    // Create the URL with the cardId parameter
+                    // Create the URL with the cardId parameter and proper context path
                     const url = `${appContextPath}/paymentcard/delete?cardId=${cardToDelete}`;
                     console.log("Delete URL:", url);
 
@@ -461,7 +462,7 @@
 
                     console.log("Setting card as default:", cardId);
 
-                    // Send request to set as default
+                    // Send request to set as default with proper context path
                     fetch(`${appContextPath}/paymentcard/setdefault?cardId=${cardId}`, {
                         method: 'POST',
                         headers: {
@@ -784,12 +785,6 @@
 
             if (year < currentYear || (year === currentYear && month < currentMonth)) {
                 alert('Card has expired. Please enter a valid expiry date.');
-                return false;
-            }
-
-            // Validate CVV (3-4 digits)
-            if (!/^\d{3,4}$/.test(cvv)) {
-                alert('Please enter a valid CVV (3-4 digits)');
                 return false;
             }
 

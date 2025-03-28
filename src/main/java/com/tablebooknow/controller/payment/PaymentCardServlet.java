@@ -101,28 +101,40 @@ public class PaymentCardServlet extends HttpServlet {
             System.out.println(paramName + " = " + request.getParameter(paramName));
         }
 
+        // Handle operations based on path or action parameter
         if (pathInfo == null || pathInfo.equals("/")) {
-            // Default - Add a new card
-            addNewCard(request, response, userId);
-            return;
-        }
+            // Default - Add a new card if no action specified
+            String action = request.getParameter("action");
+            if (action == null || action.isEmpty()) {
+                addNewCard(request, response, userId);
+                return;
+            }
 
-        if (pathInfo.equals("/update")) {
+            // Otherwise, use the action parameter
+            if ("update".equals(action)) {
+                updateCard(request, response, userId);
+                return;
+            } else if ("delete".equals(action)) {
+                deleteCard(request, response, userId);
+                return;
+            } else if ("setdefault".equals(action)) {
+                setDefaultCard(request, response, userId);
+                return;
+            } else {
+                // Default is to add new card
+                addNewCard(request, response, userId);
+                return;
+            }
+        } else if (pathInfo.equals("/update")) {
             updateCard(request, response, userId);
             return;
-        }
-
-        if (pathInfo.equals("/delete")) {
+        } else if (pathInfo.equals("/delete")) {
             deleteCard(request, response, userId);
             return;
-        }
-
-        if (pathInfo.equals("/setdefault")) {
+        } else if (pathInfo.equals("/setdefault")) {
             setDefaultCard(request, response, userId);
             return;
-        }
-
-        if (pathInfo.equals("/process")) {
+        } else if (pathInfo.equals("/process")) {
             processPaymentWithCard(request, response, userId);
             return;
         }
