@@ -3,6 +3,7 @@
 <%@ page import="com.tablebooknow.model.payment.PaymentCard" %>
 <%@ page import="com.tablebooknow.util.GsonFactory" %>
 <%@ page import="com.google.gson.Gson" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1092,11 +1093,11 @@
                     <button class="card-btn btn-delete" onclick="showDeleteModal('${card.id}')">
                         <i class="fas fa-trash"></i> Delete
                     </button>
-                    ${!card.defaultCard ?
-                      `<button class="card-btn set-default-btn" data-card-id="${card.id}">
-                          <i class="fas fa-star"></i> Set Default
-                       </button>` :
-                      ''}
+                   <c:if test="${!card.defaultCard}">
+                       <button class="card-btn set-default-btn" data-card-id="${card.id}">
+                           <i class="fas fa-star"></i> Set Default
+                       </button>
+                   </c:if>
                 </div>
             `;
 

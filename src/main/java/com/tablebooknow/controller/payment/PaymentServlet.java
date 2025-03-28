@@ -207,7 +207,7 @@ public class PaymentServlet extends HttpServlet {
 
             // Generate form parameters for PayHere
             Map<String, String> params = paymentGateway.generateFormParameters(
-                    payment, reservation, user, returnUrl, cancelUrl, notifyUrl
+                    payment, reservation, user, returnUrl, cancelUrl, notifyUrl, null
             );
 
             // Check for a selected payment card
@@ -219,8 +219,7 @@ public class PaymentServlet extends HttpServlet {
                     PaymentCard card = paymentCardDAO.findById(paymentCardId);
 
                     if (card != null) {
-                        // Add card details to the payment parameters
-                        // This can be useful for reference and tracking
+                        // Update the parameters with the card ID
                         params.put("custom_3", card.getId());
 
                         // If you want to store the card association with the payment
