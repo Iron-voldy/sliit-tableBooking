@@ -1,6 +1,7 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.List" %>
 <%@ page import="com.tablebooknow.model.payment.PaymentCard" %>
+<%@ page import="com.tablebooknow.util.GsonFactory" %>
 <%@ page import="com.google.gson.Gson" %>
 <!DOCTYPE html>
 <html lang="en">
@@ -381,6 +382,19 @@
             animation: shake 0.5s ease-in-out;
         }
 
+        .success-message {
+            color: #2ecc71;
+            margin-top: 1rem;
+            text-align: center;
+            background: rgba(46, 204, 113, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+        }
+
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             20%, 60% { transform: translateX(-5px); }
@@ -559,8 +573,8 @@
         // Get payment cards for this user
         List<PaymentCard> paymentCards = (List<PaymentCard>) request.getAttribute("paymentCards");
 
-        // Convert payment cards to JSON for JavaScript
-        Gson gson = new Gson();
+        // Convert payment cards to JSON for JavaScript using our custom adapter
+        Gson gson = GsonFactory.createGson();
         String paymentCardsJson = "[]";
         if (paymentCards != null && !paymentCards.isEmpty()) {
             paymentCardsJson = gson.toJson(paymentCards);
@@ -867,261 +881,261 @@
                         method: 'POST'
                     })
                     .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        // Reload page to refresh the card list
-                        location.reload();
-                    })
-                    .catch(error => {
-                        console.error('Error deleting card:', error);
-                        alert('Failed to delete card: ' + error.message);
-                    });
-                }
+                                            if (!response.ok) {
+                                                throw new Error('Network response was not ok');
+                                            }
+                                            // Reload page to refresh the card list
+                                            location.reload();
+                                        })
+                                        .catch(error => {
+                                            console.error('Error deleting card:', error);
+                                            alert('Failed to delete card: ' + error.message);
+                                        });
+                                    }
 
-                // Close the modal
-                hideDeleteModal();
-            });
+                                    // Close the modal
+                                    hideDeleteModal();
+                                });
 
-            // Payment form submission
-            document.getElementById('paymentForm').addEventListener('submit', function(e) {
-                // Check if a card is selected
-                if (!selectedCardIdInput.value) {
-                    e.preventDefault();
-                    alert('Please select a payment method');
-                    return false;
-                }
+                                // Payment form submission
+                                document.getElementById('paymentForm').addEventListener('submit', function(e) {
+                                    // Check if a card is selected
+                                    if (!selectedCardIdInput.value) {
+                                        e.preventDefault();
+                                        alert('Please select a payment method');
+                                        return false;
+                                    }
 
-                // Proceed with submission - disable button to prevent double-submission
-                proceedBtn.textContent = 'Processing...';
-                proceedBtn.disabled = true;
-                return true;
-            });
+                                    // Proceed with submission - disable button to prevent double-submission
+                                    proceedBtn.textContent = 'Processing...';
+                                    proceedBtn.disabled = true;
+                                    return true;
+                                });
 
-            // Initialize the card display
-            renderCards();
-        });
+                                // Initialize the card display
+                                renderCards();
+                            });
 
-        // Functions
+                            // Functions
 
-        // Render all cards
-        function renderCards() {
-            const paymentCardsContainer = document.getElementById('paymentCardsContainer');
-            const noCardsMessage = document.getElementById('noCardsMessage');
-            const proceedBtn = document.getElementById('proceedBtn');
+                            // Render all cards
+                            function renderCards() {
+                                const paymentCardsContainer = document.getElementById('paymentCardsContainer');
+                                const noCardsMessage = document.getElementById('noCardsMessage');
+                                const proceedBtn = document.getElementById('proceedBtn');
 
-            // Clear container
-            paymentCardsContainer.innerHTML = '';
+                                // Clear container
+                                paymentCardsContainer.innerHTML = '';
 
-            if (!paymentCards || paymentCards.length === 0) {
-                // Show no cards message
-                paymentCardsContainer.appendChild(noCardsMessage);
-                proceedBtn.disabled = true;
-                return;
-            }
+                                if (!paymentCards || paymentCards.length === 0) {
+                                    // Show no cards message
+                                    paymentCardsContainer.appendChild(noCardsMessage);
+                                    proceedBtn.disabled = true;
+                                    return;
+                                }
 
-            // Hide no cards message
-            noCardsMessage.style.display = 'none';
+                                // Hide no cards message
+                                noCardsMessage.style.display = 'none';
 
-            // Enable proceed button
-            proceedBtn.disabled = false;
+                                // Enable proceed button
+                                proceedBtn.disabled = false;
 
-            // Add cards to container
-            paymentCards.forEach(card => {
-                const cardElement = createCardElement(card);
-                paymentCardsContainer.appendChild(cardElement);
-            });
+                                // Add cards to container
+                                paymentCards.forEach(card => {
+                                    const cardElement = createCardElement(card);
+                                    paymentCardsContainer.appendChild(cardElement);
+                                });
 
-            // Select default card
-            const defaultCard = paymentCards.find(card =>
-                card.defaultCard === true || card.isDefault === true);
+                                // Select default card
+                                const defaultCard = paymentCards.find(card =>
+                                    card.defaultCard === true || card.isDefault === true);
 
-            if (defaultCard) {
-                selectCard(defaultCard.id);
-            } else if (paymentCards.length > 0) {
-                // Select first card if no default
-                selectCard(paymentCards[0].id);
-            }
-        }
+                                if (defaultCard) {
+                                    selectCard(defaultCard.id);
+                                } else if (paymentCards.length > 0) {
+                                    // Select first card if no default
+                                    selectCard(paymentCards[0].id);
+                                }
+                            }
 
-        // Create HTML card element
-        function createCardElement(card) {
-            const cardElement = document.createElement('div');
-            cardElement.className = 'payment-card';
-            cardElement.dataset.cardId = card.id;
+                            // Create HTML card element
+                            function createCardElement(card) {
+                                const cardElement = document.createElement('div');
+                                cardElement.className = 'payment-card';
+                                cardElement.dataset.cardId = card.id;
 
-            // Determine card icon class
-            let cardIconClass = 'fa-credit-card';
-            if (card.cardType === 'visa') {
-                cardIconClass = 'fa-cc-visa';
-            } else if (card.cardType === 'mastercard') {
-                cardIconClass = 'fa-cc-mastercard';
-            } else if (card.cardType === 'amex') {
-                cardIconClass = 'fa-cc-amex';
-            } else if (card.cardType === 'discover') {
-                cardIconClass = 'fa-cc-discover';
-            }
+                                // Determine card icon class
+                                let cardIconClass = 'fa-credit-card';
+                                if (card.cardType === 'visa') {
+                                    cardIconClass = 'fa-cc-visa';
+                                } else if (card.cardType === 'mastercard') {
+                                    cardIconClass = 'fa-cc-mastercard';
+                                } else if (card.cardType === 'amex') {
+                                    cardIconClass = 'fa-cc-amex';
+                                } else if (card.cardType === 'discover') {
+                                    cardIconClass = 'fa-cc-discover';
+                                }
 
-            // Format card type display
-            const cardTypeName = card.cardType.charAt(0).toUpperCase() + card.cardType.slice(1);
+                                // Format card type display
+                                const cardTypeName = card.cardType.charAt(0).toUpperCase() + card.cardType.slice(1);
 
-            // Get last 4 digits of card number
-            const last4 = card.maskedCardNumber ?
-                card.maskedCardNumber.replace(/\s/g, '').slice(-4) :
-                (card.cardNumber ? card.cardNumber.slice(-4) : '****');
+                                // Get last 4 digits of card number
+                                const last4 = card.maskedCardNumber ?
+                                    card.maskedCardNumber.replace(/\s/g, '').slice(-4) :
+                                    (card.cardNumber ? card.cardNumber.slice(-4) : '****');
 
-            // Set HTML content
-            cardElement.innerHTML = `
-                ${(card.defaultCard || card.isDefault) ? '<div class="card-badge">Default</div>' : ''}
-                <div class="card-type">
-                    <i class="fab ${cardIconClass} card-icon"></i>
-                    <span class="card-name">${cardTypeName}</span>
-                </div>
-                <div class="card-number">**** **** **** ${last4}</div>
-                <div class="card-expiry">Expires: ${card.expiryDate}</div>
-                <div class="card-actions">
-                    <button class="card-btn btn-edit" onclick="editCard('${card.id}')">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="card-btn btn-delete" onclick="showDeleteModal('${card.id}')">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
-                </div>
-            `;
+                                // Set HTML content
+                                cardElement.innerHTML = `
+                                    ${(card.defaultCard || card.isDefault) ? '<div class="card-badge">Default</div>' : ''}
+                                    <div class="card-type">
+                                        <i class="fab ${cardIconClass} card-icon"></i>
+                                        <span class="card-name">${cardTypeName}</span>
+                                    </div>
+                                    <div class="card-number">**** **** **** ${last4}</div>
+                                    <div class="card-expiry">Expires: ${card.expiryDate}</div>
+                                    <div class="card-actions">
+                                        <button class="card-btn btn-edit" onclick="editCard('${card.id}')">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="card-btn btn-delete" onclick="showDeleteModal('${card.id}')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                `;
 
-            // Add click event for card selection
-            cardElement.addEventListener('click', function(e) {
-                // Don't select if clicking on buttons
-                if (e.target.closest('.card-actions')) {
-                    return;
-                }
+                                // Add click event for card selection
+                                cardElement.addEventListener('click', function(e) {
+                                    // Don't select if clicking on buttons
+                                    if (e.target.closest('.card-actions')) {
+                                        return;
+                                    }
 
-                selectCard(card.id);
-            });
+                                    selectCard(card.id);
+                                });
 
-            return cardElement;
-        }
+                                return cardElement;
+                            }
 
-        // Select a card
-        function selectCard(cardId) {
-            // Remove selected class from all cards
-            document.querySelectorAll('.payment-card').forEach(cardElem => {
-                cardElem.classList.remove('selected');
-            });
+                            // Select a card
+                            function selectCard(cardId) {
+                                // Remove selected class from all cards
+                                document.querySelectorAll('.payment-card').forEach(cardElem => {
+                                    cardElem.classList.remove('selected');
+                                });
 
-            // Add selected class to this card
-            const cardElement = document.querySelector(`.payment-card[data-card-id="${cardId}"]`);
-            if (cardElement) {
-                cardElement.classList.add('selected');
+                                // Add selected class to this card
+                                const cardElement = document.querySelector(`.payment-card[data-card-id="${cardId}"]`);
+                                if (cardElement) {
+                                    cardElement.classList.add('selected');
 
-                // Update hidden input value
-                document.getElementById('selectedCardId').value = cardId;
-            }
-        }
+                                    // Update hidden input value
+                                    document.getElementById('selectedCardId').value = cardId;
+                                }
+                            }
 
-        // Show delete confirmation modal
-        function showDeleteModal(id) {
-            cardToDelete = id;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
+                            // Show delete confirmation modal
+                            function showDeleteModal(id) {
+                                cardToDelete = id;
+                                document.getElementById('deleteModal').style.display = 'flex';
+                            }
 
-        // Hide delete confirmation modal
-        function hideDeleteModal() {
-            document.getElementById('deleteModal').style.display = 'none';
-            cardToDelete = null;
-        }
+                            // Hide delete confirmation modal
+                            function hideDeleteModal() {
+                                document.getElementById('deleteModal').style.display = 'none';
+                                cardToDelete = null;
+                            }
 
-        // Edit a card
-        function editCard(cardId) {
-            // Find the card in the array
-            const card = paymentCards.find(c => c.id === cardId);
-            if (!card) {
-                console.error("Card not found:", cardId);
-                return;
-            }
+                            // Edit a card
+                            function editCard(cardId) {
+                                // Find the card in the array
+                                const card = paymentCards.find(c => c.id === cardId);
+                                if (!card) {
+                                    console.error("Card not found:", cardId);
+                                    return;
+                                }
 
-            console.log("Editing card:", card);
+                                console.log("Editing card:", card);
 
-            // Show the form
-            const newCardForm = document.getElementById('newCardForm');
-            const toggleFormBtn = document.getElementById('toggleFormBtn');
+                                // Show the form
+                                const newCardForm = document.getElementById('newCardForm');
+                                const toggleFormBtn = document.getElementById('toggleFormBtn');
 
-            newCardForm.classList.add('visible');
-            toggleFormBtn.innerHTML = '<i class="fas fa-minus btn-icon"></i> Close Form';
+                                newCardForm.classList.add('visible');
+                                toggleFormBtn.innerHTML = '<i class="fas fa-minus btn-icon"></i> Close Form';
 
-            // Update form action and button text
-            document.getElementById('formAction').value = 'update';
-            document.getElementById('editCardId').value = cardId;
-            document.getElementById('saveCardBtn').textContent = 'Update Card';
+                                // Update form action and button text
+                                document.getElementById('formAction').value = 'update';
+                                document.getElementById('editCardId').value = cardId;
+                                document.getElementById('saveCardBtn').textContent = 'Update Card';
 
-            // Fill form with card data
-            document.getElementById('cardholderName').value = card.cardholderName || '';
-            // Don't populate full card number for security reasons
-            document.getElementById('cardNumber').value = '';
-            document.getElementById('expiryDate').value = card.expiryDate || '';
-            document.getElementById('cvv').value = ''; // Don't populate CVV for security reasons
-            document.getElementById('cardType').value = card.cardType || '';
-            document.getElementById('makeDefault').checked = card.defaultCard || card.isDefault || false;
+                                // Fill form with card data
+                                document.getElementById('cardholderName').value = card.cardholderName || '';
+                                // Don't populate full card number for security reasons
+                                document.getElementById('cardNumber').value = '';
+                                document.getElementById('expiryDate').value = card.expiryDate || '';
+                                document.getElementById('cvv').value = ''; // Don't populate CVV for security reasons
+                                document.getElementById('cardType').value = card.cardType || '';
+                                document.getElementById('makeDefault').checked = card.defaultCard || card.isDefault || false;
 
-            // Set editing state
-            isEditingCard = true;
-        }
+                                // Set editing state
+                                isEditingCard = true;
+                            }
 
-        // Reset card form to add new mode
-        function resetCardForm() {
-            const cardForm = document.getElementById('cardForm');
-            cardForm.reset();
+                            // Reset card form to add new mode
+                            function resetCardForm() {
+                                const cardForm = document.getElementById('cardForm');
+                                cardForm.reset();
 
-            document.getElementById('formAction').value = 'add';
-            document.getElementById('editCardId').value = '';
-            document.getElementById('saveCardBtn').textContent = 'Save Card';
+                                document.getElementById('formAction').value = 'add';
+                                document.getElementById('editCardId').value = '';
+                                document.getElementById('saveCardBtn').textContent = 'Save Card';
 
-            isEditingCard = false;
-        }
+                                isEditingCard = false;
+                            }
 
-        // Validate card form
-        function validateCardForm() {
-            const cardholderName = document.getElementById('cardholderName').value;
-            const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
-            const expiryDate = document.getElementById('expiryDate').value;
-            const cvv = document.getElementById('cvv').value;
-            const cardType = document.getElementById('cardType').value;
+                            // Validate card form
+                            function validateCardForm() {
+                                const cardholderName = document.getElementById('cardholderName').value;
+                                const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g, '');
+                                const expiryDate = document.getElementById('expiryDate').value;
+                                const cvv = document.getElementById('cvv').value;
+                                const cardType = document.getElementById('cardType').value;
 
-            // When editing, we don't require card number and CVV
-            if (isEditingCard) {
-                if (!cardholderName || !expiryDate || !cardType) {
-                    alert('Please fill in all required fields');
-                    return false;
-                }
-                return true;
-            }
+                                // When editing, we don't require card number and CVV
+                                if (isEditingCard) {
+                                    if (!cardholderName || !expiryDate || !cardType) {
+                                        alert('Please fill in all required fields');
+                                        return false;
+                                    }
+                                    return true;
+                                }
 
-            // Basic validation for new card
-            if (!cardholderName || !cardNumber || !expiryDate || !cvv || !cardType) {
-                alert('Please fill in all fields');
-                return false;
-            }
+                                // Basic validation for new card
+                                if (!cardholderName || !cardNumber || !expiryDate || !cvv || !cardType) {
+                                    alert('Please fill in all fields');
+                                    return false;
+                                }
 
-            // Validate card number format (13-19 digits)
-            if (!/^\d{13,19}$/.test(cardNumber)) {
-                alert('Please enter a valid card number');
-                return false;
-            }
+                                // Validate card number format (13-19 digits)
+                                if (!/^\d{13,19}$/.test(cardNumber)) {
+                                    alert('Please enter a valid card number');
+                                    return false;
+                                }
 
-            // Validate expiry date
-            if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
-                alert('Please enter a valid expiry date (MM/YY)');
-                return false;
-            }
+                                // Validate expiry date
+                                if (!/^\d{2}\/\d{2}$/.test(expiryDate)) {
+                                    alert('Please enter a valid expiry date (MM/YY)');
+                                    return false;
+                                }
 
-            // Validate CVV (3-4 digits)
-            if (!/^\d{3,4}$/.test(cvv)) {
-                alert('Please enter a valid CVV');
-                return false;
-            }
+                                // Validate CVV (3-4 digits)
+                                if (!/^\d{3,4}$/.test(cvv)) {
+                                    alert('Please enter a valid CVV');
+                                    return false;
+                                }
 
-            return true;
-        }
-    </script>
-</body>
-</html>
+                                return true;
+                            }
+                        </script>
+                    </body>
+                    </html>
