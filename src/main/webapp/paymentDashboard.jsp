@@ -396,66 +396,30 @@
             });
 
             // Delete card confirmation
+            // Delete card confirmation with form submission
             confirmDeleteBtn.addEventListener('click', function() {
                 if (cardToDelete) {
                     console.log("Deleting card:", cardToDelete);
 
-                    // Create the URL with the cardId parameter and proper context path
-                   const url = appContextPath + "/paymentcard/delete";
-                           console.log("Full Delete URL:", url);
+                    // Create a form and submit it
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = appContextPath + '/paymentcard/delete';
 
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'cardId';
+                    input.value = cardToDelete;
 
-                    // Send delete request
-                    fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                        },
-                        body: `cardId=${cardToDelete}`
-                    })
-                    .then(response => {
-                        console.log("Delete response status:", response.status);
-                        if (!response.ok) {
-                            throw new Error(`Server returned ${response.status} ${response.statusText}`);
-                        }
-                        return response.text();
-                    })
-                    .then(data => {
-                        console.log("Delete response data:", data);
+                    form.appendChild(input);
+                    document.body.appendChild(form);
 
-                        // Show success message before reload
-                        const messageDiv = document.createElement('div');
-                        messageDiv.className = 'message success-message';
-                        messageDiv.textContent = 'Payment method deleted successfully';
-
-                        // Insert at the beginning of content
-                        const dashboardContent = document.querySelector('.dashboard-content');
-                        dashboardContent.insertBefore(messageDiv, dashboardContent.firstChild);
-
-                        // Reload page after a brief delay
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1000);
-                    })
-                    .catch(error => {
-                        console.error('Error deleting card:', error);
-
-                        // Show error message
-                        const messageDiv = document.createElement('div');
-                        messageDiv.className = 'message error-message';
-                        messageDiv.textContent = 'Failed to delete card: ' + error.message;
-
-                        // Insert at the beginning of content
-                        const dashboardContent = document.querySelector('.dashboard-content');
-                        dashboardContent.insertBefore(messageDiv, dashboardContent.firstChild);
-
-                        // Close the modal
-                        hideDeleteModal();
-                    });
+                    console.log("Submitting delete form with cardId:", cardToDelete);
+                    form.submit();
+                } else {
+                    console.error("No card selected for deletion");
+                    alert("No card selected for deletion");
                 }
-
-                // Close the modal
-                hideDeleteModal();
             });
 
             // Set default card functionality
