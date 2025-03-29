@@ -122,69 +122,159 @@ const serverReservedTables = [
 
 console.log("Received reserved tables from server:", serverReservedTables);
 
-// Queue implementation for table reservation
+// Enhanced Queue implementation for table reservation
+// This is a client-side implementation that mirrors the server-side ReservationQueue class
 class ReservationQueue {
     constructor() {
         this.queue = [];
+        this.pendingQueue = [];
     }
 
+    // Add a reservation to the queue
     enqueue(reservation) {
         this.queue.push(reservation);
+        if (reservation.status === 'pending') {
+            this.pendingQueue.push(reservation.id);
+        }
     }
 
+    // Remove the next reservation from the queue
     dequeue() {
         if (this.isEmpty()) {
             return null;
         }
-        return this.queue.shift();
+        const reservation = this.findReservationById(this.pendingQueue.shift());
+        return reservation;
     }
 
+    // Check if the queue is empty
     isEmpty() {
-        return this.queue.length == 0;
+        return this.pendingQueue.length === 0;
     }
 
+    // Get the queue size
     size() {
-        return this.queue.length;
+        return this.pendingQueue.length;
     }
 
-    getQueue() {
+    // Get all reservations
+    getAllReservations() {
         return [...this.queue];
     }
-}
 
-// Merge sort implementation for sorting reservations
-function mergeSort(arr, compareFunction) {
-    if (arr.length <= 1) {
-        return arr;
+    // Find pending reservations
+    findPendingReservations() {
+        return this.queue.filter(r => r.status === 'pending');
     }
 
-    const mid = Math.floor(arr.length / 2);
-    const left = arr.slice(0, mid);
-    const right = arr.slice(mid);
+    // Find a reservation by ID
+    findReservationById(id) {
+        return this.queue.find(r => r.id === id);
+    }
 
-    return merge(
-        mergeSort(left, compareFunction),
-        mergeSort(right, compareFunction),
-        compareFunction
-    );
-}
-
-function merge(left, right, compareFunction) {
-    let result = [];
-    let leftIndex = 0;
-    let rightIndex = 0;
-
-    while (leftIndex < left.length && rightIndex < right.length) {
-        if (compareFunction(left[leftIndex], right[rightIndex]) <= 0) {
-            result.push(left[leftIndex]);
-            leftIndex++;
-        } else {
-            result.push(right[rightIndex]);
-            rightIndex++;
+    // Peek at the next pending reservation without removing it
+    peekNextPending() {
+        if (this.pendingQueue.length === 0) {
+            return null;
         }
+        return this.findReservationById(this.pendingQueue[0]);
     }
 
-    return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
+    // Process the next reservation (dequeue and mark as confirmed)
+    processNextReservation() {
+        if (this.pendingQueue.length === 0) {
+            return null;
+        }
+
+        const nextId = this.pendingQueue.shift();
+        const nextReservation = this.findReservationById(nextId);
+
+        if (nextReservation) {
+            nextReservation.status = 'confirmed';
+        }
+
+        return nextReservation;
+    }
+
+    // Filter reservations by status
+    filterByStatus(status) {
+        return this.queue.filter(r => r.status === status);
+    }
+
+    // Prioritize a reservation in the pending queue
+    prioritize(reservationId) {
+        // Check if reservation exists and is pending
+        const reservation = this.findReservationById(reservationId);
+        if (!reservation || reservation.status !== 'pending') {
+            return false;
+        }
+
+        // Find position in pending queue
+        const index = this.pendingQueue.indexOf(reservationId);
+        if (index === -1) {
+            return false;
+        }
+
+        // Remove from current position
+        this.pendingQueue.splice(index, 1);
+
+        // Add to front of queue
+        this.pendingQueue.unshift(reservationId);
+
+        return true;
+    }
+
+    // Sort reservations by time
+    sortByTime() {
+        const sorted = [...this.queue].sort((a, b) => {
+            // Compare dates first
+            const dateCompare = a.reservationDate.localeCompare(b.reservationDate);
+            if (dateCompare !== 0) {
+                return dateCompare;
+            }
+
+            // If dates are the same, compare times
+            return a.reservationTime.localeCompare(b.reservationTime);
+        });
+
+        const sortedQueue = new ReservationQueue();
+        sorted.forEach(reservation => sortedQueue.enqueue(reservation));
+
+        return sortedQueue;
+    }
+
+    // Implementation of merge sort algorithm for sorting reservations
+    static mergeSort(list, compareFunction) {
+        if (list.length <= 1) {
+            return list;
+        }
+
+        const mid = Math.floor(list.length / 2);
+        const left = ReservationQueue.mergeSort(list.slice(0, mid), compareFunction);
+        const right = ReservationQueue.mergeSort(list.slice(mid), compareFunction);
+
+        return ReservationQueue.merge(left, right, compareFunction);
+    }
+
+    // Merge two sorted lists
+    static merge(left, right, compareFunction) {
+        let result = [];
+        let leftIndex = 0;
+        let rightIndex = 0;
+
+        while (leftIndex < left.length && rightIndex < right.length) {
+            if (compareFunction(left[leftIndex], right[rightIndex]) <= 0) {
+                result.push(left[leftIndex]);
+                leftIndex++;
+            } else {
+                result.push(right[rightIndex]);
+                rightIndex++;
+            }
+        }
+
+        // Add remaining elements
+        return result.concat(left.slice(leftIndex)).concat(right.slice(rightIndex));
+    }
 }
 
 // Function to convert time string to minutes for comparison

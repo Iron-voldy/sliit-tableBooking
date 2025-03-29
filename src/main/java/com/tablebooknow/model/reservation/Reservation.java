@@ -13,29 +13,27 @@ public class Reservation implements Serializable {
     private String tableId;
     private String reservationDate;
     private String reservationTime;
-    private int duration;  // in hours
-    private String bookingType;  // "normal" or "special"
+    private int duration;
+    private String bookingType;
     private String specialRequests;
-    private String status;  // confirmed, cancelled, completed
-    private LocalDateTime createdAt;
+    private String status;
+    private String createdAt;
 
     /**
-     * Default constructor that generates a unique ID for a new reservation.
+     * Default constructor with UUID generation
      */
     public Reservation() {
         this.id = UUID.randomUUID().toString();
-        this.createdAt = LocalDateTime.now();
-        this.status = "pending";
-        this.duration = 2;  // Default duration is 2 hours
-        this.bookingType = "normal";  // Default booking type is normal
+        this.status = "pending";  // Default status
+        this.createdAt = LocalDateTime.now().toString();
     }
 
     /**
-     * Constructor with all fields.
+     * Full constructor
      */
     public Reservation(String id, String userId, String tableId, String reservationDate,
                        String reservationTime, int duration, String bookingType,
-                       String specialRequests, String status, LocalDateTime createdAt) {
+                       String specialRequests, String status, String createdAt) {
         this.id = id;
         this.userId = userId;
         this.tableId = tableId;
@@ -45,7 +43,7 @@ public class Reservation implements Serializable {
         this.bookingType = bookingType;
         this.specialRequests = specialRequests;
         this.status = status;
-        this.createdAt = createdAt != null ? createdAt : LocalDateTime.now();
+        this.createdAt = createdAt;
     }
 
     // Getters and Setters
@@ -122,72 +120,65 @@ public class Reservation implements Serializable {
         this.status = status;
     }
 
-    public LocalDateTime getCreatedAt() {
+    public String getCreatedAt() {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
     }
 
     /**
-     * Converts the Reservation object to a CSV format string for file storage.
-     * Format: id,userId,tableId,reservationDate,reservationTime,duration,bookingType,specialRequests,status,createdAt
+     * Convert the reservation to a CSV string for file storage
      */
     public String toCsvString() {
         return String.format("%s,%s,%s,%s,%s,%d,%s,%s,%s,%s",
                 id,
-                userId != null ? userId : "",
+                userId,
                 tableId != null ? tableId : "",
-                reservationDate != null ? reservationDate : "",
-                reservationTime != null ? reservationTime : "",
+                reservationDate,
+                reservationTime,
                 duration,
-                bookingType != null ? bookingType : "normal",
-                specialRequests != null ? specialRequests.replace(",", ";;") : "",  // Replace commas in special requests
-                status != null ? status : "",
-                createdAt != null ? createdAt.toString() : LocalDateTime.now().toString());
+                bookingType,
+                specialRequests != null ? specialRequests.replace(",", ";;") : "",
+                status,
+                createdAt);
     }
 
     /**
-     * Creates a Reservation object from a CSV format string.
+     * Create a reservation from a CSV string
      */
     public static Reservation fromCsvString(String csvLine) {
         String[] parts = csvLine.split(",");
-        if (parts.length < 10) {
-            throw new IllegalArgumentException("Invalid CSV format for Reservation");
+        if (parts.length < 9) {
+            // Not enough parts
+            throw new IllegalArgumentException("Invalid CSV format for Reservation: " + csvLine);
         }
 
-        LocalDateTime createdAt = null;
-        try {
-            if (!parts[9].isEmpty()) {
-                createdAt = LocalDateTime.parse(parts[9]);
-            }
-        } catch (Exception e) {
-            createdAt = LocalDateTime.now();
-        }
-
-        // Convert duration from string to int
-        int duration = 2;  // Default
+        int duration = 2; // Default duration
         try {
             duration = Integer.parseInt(parts[5]);
         } catch (NumberFormatException e) {
-            // Keep default
+            // Use default if parsing fails
         }
 
         // Restore commas in special requests
         String specialRequests = parts[7].replace(";;", ",");
 
+        // Use default createdAt if not provided
+        String createdAt = parts.length >= 10 ? parts[9] : LocalDateTime.now().toString();
+
         return new Reservation(
-                parts[0],                  // id
-                parts[1],                  // userId
-                parts[2],                  // tableId
-                parts[3],                  // reservationDate
-                parts[4],                  // reservationTime
-                duration,                  // duration
-                parts[6],                  // bookingType
-                specialRequests,           // specialRequests
-                parts[8],                  // status
-                createdAt                  // createdAt
+                parts[0], // id
+                parts[1], // userId
+                parts[2], // tableId
+                parts[3], // reservationDate
+                parts[4], // reservationTime
+                duration, // duration
+                parts[6], // bookingType
+                specialRequests, // specialRequests
+                parts[8], // status
+                createdAt // createdAt
         );
     }
 
@@ -202,7 +193,6 @@ public class Reservation implements Serializable {
                 ", duration=" + duration +
                 ", bookingType='" + bookingType + '\'' +
                 ", status='" + status + '\'' +
-                ", createdAt=" + createdAt +
                 '}';
     }
 }

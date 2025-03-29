@@ -127,7 +127,11 @@
                 case 'couple':
                     capacityInput.value = 2;
                     break;
+                default:
+                    capacityInput.value = '';
             }
+
+            capacityInput.setAttribute('data-auto-filled', 'true');
         }
 
         return true;

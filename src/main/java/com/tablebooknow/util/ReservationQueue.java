@@ -2,200 +2,254 @@ package com.tablebooknow.util;
 
 import com.tablebooknow.model.reservation.Reservation;
 
-import java.time.LocalTime;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.stream.Collectors;
 
 /**
- * Queue implementation for managing reservation requests.
- * This implementation uses the FIFO (First In, First Out) principle
- * but can also be sorted by time for priority handling.
+ * Implements a reservation queue management system with support for
+ * priority, filtering, and sorting operations.
  */
 public class ReservationQueue {
-    private List<Reservation> queue;
+    private List<Reservation> reservations;
+    private Queue<String> pendingQueue;
 
     /**
-     * Constructor to initialize an empty queue.
+     * Default constructor - creates an empty queue
      */
     public ReservationQueue() {
-        this.queue = new ArrayList<>();
+        this.reservations = new ArrayList<>();
+        this.pendingQueue = new LinkedList<>();
     }
 
     /**
-     * Constructor with initial list of reservations.
-     *
-     * @param initialReservations List of reservations to initialize the queue with
+     * Constructor with initial reservations
+     * @param reservations List of reservations to initialize the queue
      */
-    public ReservationQueue(List<Reservation> initialReservations) {
-        this.queue = new ArrayList<>(initialReservations);
+    public ReservationQueue(List<Reservation> reservations) {
+        this.reservations = new ArrayList<>(reservations);
+        this.pendingQueue = new LinkedList<>();
+
+        // Initialize the queue with pending reservation IDs
+        for (Reservation reservation : reservations) {
+            if ("pending".equals(reservation.getStatus())) {
+                pendingQueue.add(reservation.getId());
+            }
+        }
     }
 
     /**
-     * Adds a reservation to the end of the queue.
-     *
+     * Add a reservation to the queue
      * @param reservation The reservation to add
      */
     public void enqueue(Reservation reservation) {
-        queue.add(reservation);
+        reservations.add(reservation);
+        if ("pending".equals(reservation.getStatus())) {
+            pendingQueue.add(reservation.getId());
+        }
     }
 
     /**
-     * Removes and returns the reservation at the front of the queue.
-     *
-     * @return The reservation at the front of the queue, or null if the queue is empty
+     * Remove the next reservation from the queue
+     * @return The next reservation in the queue
      */
     public Reservation dequeue() {
-        if (isEmpty()) {
+        if (pendingQueue.isEmpty()) {
             return null;
         }
-        return queue.remove(0);
+
+        String nextId = pendingQueue.poll();
+        return findReservationById(nextId);
     }
 
     /**
-     * Returns the reservation at the front of the queue without removing it.
-     *
-     * @return The reservation at the front of the queue, or null if the queue is empty
-     */
-    public Reservation peek() {
-        if (isEmpty()) {
-            return null;
-        }
-        return queue.get(0);
-    }
-
-    /**
-     * Checks if the queue is empty.
-     *
-     * @return true if the queue is empty, false otherwise
+     * Check if the queue is empty
+     * @return true if the queue is empty
      */
     public boolean isEmpty() {
-        return queue.isEmpty();
+        return pendingQueue.isEmpty();
     }
 
     /**
-     * Returns the number of reservations in the queue.
-     *
-     * @return The number of reservations in the queue
+     * Get the number of reservations in the queue
+     * @return The queue size
      */
     public int size() {
-        return queue.size();
+        return pendingQueue.size();
     }
 
     /**
-     * Returns a list of all reservations in the queue.
-     *
-     * @return A list of all reservations in the queue
+     * Get all reservations
+     * @return List of all reservations
      */
     public List<Reservation> getAllReservations() {
-        return new ArrayList<>(queue);
+        return new ArrayList<>(reservations);
     }
 
     /**
-     * Clears all reservations from the queue.
+     * Find all pending reservations
+     * @return List of pending reservations
      */
-    public void clear() {
-        queue.clear();
+    public List<Reservation> findPendingReservations() {
+        return reservations.stream()
+                .filter(r -> "pending".equals(r.getStatus()))
+                .collect(Collectors.toList());
     }
 
     /**
-     * Sorts the reservations in the queue by their reservation time.
-     * Uses merge sort algorithm for sorting.
-     *
+     * Peek at the next pending reservation without removing it
+     * @return The next pending reservation or null if none
+     */
+    public Reservation peekNextPending() {
+        if (pendingQueue.isEmpty()) {
+            return null;
+        }
+
+        String nextId = pendingQueue.peek();
+        return findReservationById(nextId);
+    }
+
+    /**
+     * Process the next reservation in the queue (dequeue and mark as confirmed)
+     * @return The processed reservation or null if queue is empty
+     */
+    public Reservation processNextReservation() {
+        if (pendingQueue.isEmpty()) {
+            return null;
+        }
+
+        String nextId = pendingQueue.poll();
+        Reservation nextReservation = findReservationById(nextId);
+
+        if (nextReservation != null) {
+            nextReservation.setStatus("confirmed");
+        }
+
+        return nextReservation;
+    }
+
+    /**
+     * Remove a reservation from the queue
+     * @param reservationId The ID of the reservation to remove
+     * @return true if removed, false if not found
+     */
+    public boolean removeReservation(String reservationId) {
+        boolean removed = false;
+
+        // Remove from main list
+        removed = reservations.removeIf(r -> r.getId().equals(reservationId));
+
+        // Remove from pending queue if present
+        pendingQueue.remove(reservationId);
+
+        return removed;
+    }
+
+    /**
+     * Find a reservation by ID
+     * @param id The reservation ID
+     * @return The reservation or null if not found
+     */
+    public Reservation findReservationById(String id) {
+        return reservations.stream()
+                .filter(r -> r.getId().equals(id))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Filter reservations by status
+     * @param status The status to filter by
+     * @return List of reservations with the specified status
+     */
+    public List<Reservation> filterByStatus(String status) {
+        return reservations.stream()
+                .filter(r -> status.equals(r.getStatus()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Prioritize a reservation in the pending queue
+     * @param reservationId The ID of the reservation to prioritize
+     * @return true if prioritized, false if not found
+     */
+    public boolean prioritize(String reservationId) {
+        // Check if the reservation exists and is pending
+        Reservation reservation = findReservationById(reservationId);
+        if (reservation == null || !"pending".equals(reservation.getStatus())) {
+            return false;
+        }
+
+        // Remove from current position in queue if present
+        if (pendingQueue.remove(reservationId)) {
+            // Add to front of queue
+            Queue<String> newQueue = new LinkedList<>();
+            newQueue.add(reservationId);
+            newQueue.addAll(pendingQueue);
+            pendingQueue = newQueue;
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Sort reservations by time (implements merge sort)
      * @return A new ReservationQueue with sorted reservations
      */
     public ReservationQueue sortByTime() {
-        if (queue.size() <= 1) {
-            return this;
-        }
+        List<Reservation> sortedList = mergeSort(reservations, Comparator
+                .comparing(Reservation::getReservationDate)
+                .thenComparing(Reservation::getReservationTime));
 
-        List<Reservation> sorted = mergeSort(queue);
-        return new ReservationQueue(sorted);
+        return new ReservationQueue(sortedList);
     }
 
     /**
-     * Implementation of merge sort algorithm for sorting reservations by time.
-     *
-     * @param reservations The list of reservations to sort
-     * @return A new sorted list of reservations
+     * Implementation of merge sort algorithm for sorting reservations
+     * @param list The list to sort
+     * @param comparator The comparator to use for sorting
+     * @return A new sorted list
      */
-    private List<Reservation> mergeSort(List<Reservation> reservations) {
-        if (reservations.size() <= 1) {
-            return new ArrayList<>(reservations);
+    private <T> List<T> mergeSort(List<T> list, Comparator<T> comparator) {
+        if (list.size() <= 1) {
+            return list;
         }
 
-        int mid = reservations.size() / 2;
-        List<Reservation> left = new ArrayList<>(reservations.subList(0, mid));
-        List<Reservation> right = new ArrayList<>(reservations.subList(mid, reservations.size()));
+        int mid = list.size() / 2;
+        List<T> left = mergeSort(list.subList(0, mid), comparator);
+        List<T> right = mergeSort(list.subList(mid, list.size()), comparator);
 
-        left = mergeSort(left);
-        right = mergeSort(right);
-
-        return merge(left, right);
+        return merge(left, right, comparator);
     }
 
     /**
-     * Merges two sorted lists of reservations.
-     *
-     * @param left The left sorted list
-     * @param right The right sorted list
-     * @return A merged sorted list
+     * Merge two sorted lists
+     * @param left The left list
+     * @param right The right list
+     * @param comparator The comparator to use for merging
+     * @return A new merged list
      */
-    private List<Reservation> merge(List<Reservation> left, List<Reservation> right) {
-        List<Reservation> result = new ArrayList<>();
+    private <T> List<T> merge(List<T> left, List<T> right, Comparator<T> comparator) {
+        List<T> result = new ArrayList<>();
         int leftIndex = 0;
         int rightIndex = 0;
 
         while (leftIndex < left.size() && rightIndex < right.size()) {
-            try {
-                Reservation leftRes = left.get(leftIndex);
-                Reservation rightRes = right.get(rightIndex);
-
-                // First compare by date
-                int dateCompare = leftRes.getReservationDate().compareTo(rightRes.getReservationDate());
-
-                if (dateCompare < 0) {
-                    // Left date is earlier
-                    result.add(leftRes);
-                    leftIndex++;
-                } else if (dateCompare > 0) {
-                    // Right date is earlier
-                    result.add(rightRes);
-                    rightIndex++;
-                } else {
-                    // Same date, compare times
-                    try {
-                        LocalTime leftTime = LocalTime.parse(leftRes.getReservationTime());
-                        LocalTime rightTime = LocalTime.parse(rightRes.getReservationTime());
-
-                        if (leftTime.isBefore(rightTime)) {
-                            result.add(leftRes);
-                            leftIndex++;
-                        } else {
-                            result.add(rightRes);
-                            rightIndex++;
-                        }
-                    } catch (DateTimeParseException e) {
-                        // If time parsing fails, use string comparison as fallback
-                        int timeCompare = leftRes.getReservationTime().compareTo(rightRes.getReservationTime());
-                        if (timeCompare <= 0) {
-                            result.add(leftRes);
-                            leftIndex++;
-                        } else {
-                            result.add(rightRes);
-                            rightIndex++;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                // In case of any error, add remaining elements from both lists
-                break;
+            if (comparator.compare(left.get(leftIndex), right.get(rightIndex)) <= 0) {
+                result.add(left.get(leftIndex));
+                leftIndex++;
+            } else {
+                result.add(right.get(rightIndex));
+                rightIndex++;
             }
         }
 
-        // Add any remaining elements
+        // Add remaining elements
         while (leftIndex < left.size()) {
             result.add(left.get(leftIndex));
             leftIndex++;
@@ -204,165 +258,6 @@ public class ReservationQueue {
         while (rightIndex < right.size()) {
             result.add(right.get(rightIndex));
             rightIndex++;
-        }
-
-        return result;
-    }
-
-    /**
-     * Find reservations for a specific table and date.
-     *
-     * @param tableId The table ID to search for
-     * @param date The date in YYYY-MM-DD format
-     * @return A list of reservations for the specified table and date
-     */
-    public List<Reservation> findByTableAndDate(String tableId, String date) {
-        List<Reservation> result = new ArrayList<>();
-
-        for (Reservation reservation : queue) {
-            if (reservation.getTableId() != null &&
-                    reservation.getTableId().equals(tableId) &&
-                    reservation.getReservationDate() != null &&
-                    reservation.getReservationDate().equals(date) &&
-                    !reservation.getStatus().equals("cancelled")) {
-
-                result.add(reservation);
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * Check if a table is available at a specific date and time.
-     *
-     * @param tableId The table ID to check
-     * @param date The date in YYYY-MM-DD format
-     * @param time The time in HH:MM format
-     * @param duration The duration in hours
-     * @return true if the table is available, false otherwise
-     */
-    public boolean isTableAvailable(String tableId, String date, String time, int duration) {
-        List<Reservation> tableReservations = findByTableAndDate(tableId, date);
-
-        if (tableReservations.isEmpty()) {
-            return true;
-        }
-
-        try {
-            LocalTime requestedTime = LocalTime.parse(time);
-            LocalTime requestedEndTime = requestedTime.plusHours(duration);
-
-            for (Reservation reservation : tableReservations) {
-                // Skip cancelled reservations
-                if ("cancelled".equals(reservation.getStatus())) {
-                    continue;
-                }
-
-                LocalTime reservationTime = LocalTime.parse(reservation.getReservationTime());
-                LocalTime reservationEndTime = reservationTime.plusHours(reservation.getDuration());
-
-                // Check for overlap
-                if (requestedTime.isBefore(reservationEndTime) &&
-                        reservationTime.isBefore(requestedEndTime)) {
-                    return false;
-                }
-            }
-
-            return true;
-        } catch (Exception e) {
-            // If there's any error, assume the table is not available to be safe
-            return false;
-        }
-    }
-
-    /**
-     * Find reservations with pending status.
-     *
-     * @return A list of pending reservations
-     */
-    public List<Reservation> findPendingReservations() {
-        List<Reservation> result = new ArrayList<>();
-
-        for (Reservation reservation : queue) {
-            if ("pending".equals(reservation.getStatus())) {
-                result.add(reservation);
-            }
-        }
-
-        return result;
-    }
-
-    /**
-     * Process the next reservation in the queue.
-     * This will dequeue the first pending reservation.
-     *
-     * @return The processed reservation or null if queue is empty
-     */
-    public Reservation processNextReservation() {
-        // Find the first pending reservation
-        for (int i = 0; i < queue.size(); i++) {
-            Reservation reservation = queue.get(i);
-            if ("pending".equals(reservation.getStatus())) {
-                // Update status to confirmed
-                reservation.setStatus("confirmed");
-                // Remove from queue
-                return queue.remove(i);
-            }
-        }
-
-        return null; // No pending reservations found
-    }
-
-    /**
-     * Returns the next pending reservation without removing it.
-     *
-     * @return The next pending reservation or null if none is found
-     */
-    public Reservation peekNextPending() {
-        for (Reservation reservation : queue) {
-            if ("pending".equals(reservation.getStatus())) {
-                return reservation;
-            }
-        }
-
-        return null; // No pending reservations found
-    }
-
-    /**
-     * Move a reservation to the front of the queue.
-     *
-     * @param reservationId The ID of the reservation to prioritize
-     * @return true if the reservation was found and moved, false otherwise
-     */
-    public boolean prioritize(String reservationId) {
-        for (int i = 0; i < queue.size(); i++) {
-            Reservation reservation = queue.get(i);
-            if (reservation.getId().equals(reservationId)) {
-                // Remove from current position
-                queue.remove(i);
-                // Add to front of queue
-                queue.add(0, reservation);
-                return true;
-            }
-        }
-
-        return false; // Reservation not found
-    }
-
-    /**
-     * Filter reservations by status.
-     *
-     * @param status The status to filter by
-     * @return A list of reservations with the specified status
-     */
-    public List<Reservation> filterByStatus(String status) {
-        List<Reservation> result = new ArrayList<>();
-
-        for (Reservation reservation : queue) {
-            if (reservation.getStatus().equals(status)) {
-                result.add(reservation);
-            }
         }
 
         return result;

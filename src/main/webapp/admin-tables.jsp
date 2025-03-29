@@ -1,4 +1,6 @@
 <%@ include file="admin-header.jsp" %>
+<%@ page import="com.tablebooknow.model.table.Table" %>
+<%@ page import="java.util.List" %>
 
 <%
     List<Table> tables = (List<Table>) request.getAttribute("tables");
