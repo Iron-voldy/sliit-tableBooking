@@ -118,6 +118,10 @@ public class ReservationServlet extends HttpServlet {
      * Handles the table selection page request.
      * This method loads all available and reserved tables for the selected date and time.
      */
+    /**
+     * Handles the table selection page request.
+     * This method loads all available and reserved tables for the selected date and time.
+     */
     private void handleTableSelectionRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Get reservation date and time from session or request
         HttpSession session = request.getSession();
@@ -187,7 +191,7 @@ public class ReservationServlet extends HttpServlet {
         session.setAttribute("bookingType", bookingType);
         session.setAttribute("reservationDuration", reservationDuration);
         request.setAttribute("reservedTables", reservedTables);
-        request.setAttribute("activeTables", activeTables);
+        // We'll send the reservedTables but not use activeTables directly in the JSP
 
         System.out.println("Forwarding to table selection JSP");
         request.getRequestDispatcher("/tableSelection.jsp").forward(request, response);

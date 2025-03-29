@@ -27,6 +27,15 @@ public class ReservationQueue {
     }
 
     /**
+     * Clears all reservations from the queue.
+     * This method empties both the main reservations list and the pending queue.
+     */
+    public void clear() {
+        this.reservations.clear();
+        this.pendingQueue.clear();
+    }
+
+    /**
      * Constructor with initial reservations
      * @param reservations List of reservations to initialize the queue
      */

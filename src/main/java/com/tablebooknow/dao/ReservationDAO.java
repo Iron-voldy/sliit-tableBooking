@@ -193,6 +193,112 @@ public class ReservationDAO {
     }
 
     /**
+     * Get a list of tables that are reserved for a specific date and time.
+     * This method checks for any reservations that would conflict with the given time slot.
+     *
+     * @param date The date to check
+     * @param time The starting time to check
+     * @param duration The duration in hours
+     * @return A list of table IDs that are reserved during the specified time slot
+     * @throws IOException If there's an error reading the reservation file
+     */
+    public List<String> getReservedTables(String date, String time, int duration) throws IOException {
+        List<String> reservedTables = new ArrayList<>();
+
+        if (!FileHandler.fileExists(FILE_PATH)) {
+            return reservedTables;
+        }
+
+        try {
+            // Parse the requested time
+            LocalTime requestedTime = LocalTime.parse(time);
+            LocalTime requestedEndTime = requestedTime.plusHours(duration);
+
+            // Get all reservations for the date
+            List<Reservation> allReservations = findAll();
+
+            // Filter reservations for the specified date with confirmed or pending status
+            List<Reservation> dateReservations = allReservations.stream()
+                    .filter(r -> date.equals(r.getReservationDate()) &&
+                            (r.getStatus().equals("confirmed") || r.getStatus().equals("pending")))
+                    .collect(Collectors.toList());
+
+            // Check each reservation for time conflict
+            for (Reservation reservation : dateReservations) {
+                if (reservation.getTableId() == null || reservation.getTableId().isEmpty()) {
+                    continue;
+                }
+
+                LocalTime reservationTime = LocalTime.parse(reservation.getReservationTime());
+                LocalTime reservationEndTime = reservationTime.plusHours(reservation.getDuration());
+
+                // Check if the time slots overlap
+                if (reservationTime.isBefore(requestedEndTime) &&
+                        requestedTime.isBefore(reservationEndTime)) {
+                    // Table is reserved during requested time slot
+                    reservedTables.add(reservation.getTableId());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error finding reserved tables: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return reservedTables;
+    }
+
+    /**
+     * Check if a table is available at a specific date and time.
+     *
+     * @param tableId The table ID to check
+     * @param date The date to check
+     * @param time The starting time to check
+     * @param duration The duration in hours
+     * @return true if the table is available, false otherwise
+     * @throws IOException If there's an error reading the reservation file
+     */
+    public boolean isTableAvailable(String tableId, String date, String time, int duration) throws IOException {
+        if (!FileHandler.fileExists(FILE_PATH)) {
+            // If the file doesn't exist, no reservations exist, so the table is available
+            return true;
+        }
+
+        try {
+            // Parse the requested time
+            LocalTime requestedTime = LocalTime.parse(time);
+            LocalTime requestedEndTime = requestedTime.plusHours(duration);
+
+            // Get all reservations for the specified table and date
+            List<Reservation> tableReservations = findAll().stream()
+                    .filter(r -> tableId.equals(r.getTableId()) &&
+                            date.equals(r.getReservationDate()) &&
+                            (r.getStatus().equals("confirmed") || r.getStatus().equals("pending")))
+                    .collect(Collectors.toList());
+
+            // Check for time conflicts
+            for (Reservation reservation : tableReservations) {
+                LocalTime reservationTime = LocalTime.parse(reservation.getReservationTime());
+                LocalTime reservationEndTime = reservationTime.plusHours(reservation.getDuration());
+
+                // Check if the time slots overlap
+                if (reservationTime.isBefore(requestedEndTime) &&
+                        requestedTime.isBefore(reservationEndTime)) {
+                    // Time conflict, table is not available
+                    return false;
+                }
+            }
+
+            // No conflicts found, table is available
+            return true;
+        } catch (Exception e) {
+            System.err.println("Error checking table availability: " + e.getMessage());
+            e.printStackTrace();
+            // If an error occurs, conservatively return false (not available)
+            return false;
+        }
+    }
+    
+    /**
      * Find reserved tables for a specific date and time.
      * @param date The reservation date
      * @param time The reservation time
