@@ -1,6 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.Map" %>
+<%@ page import="java.util.HashMap" %>
 <%@ page import="com.tablebooknow.model.table.Table" %>
 <%@ page import="com.tablebooknow.dao.TableDAO" %>
 <!DOCTYPE html>
@@ -11,7 +13,7 @@
     <title>Table Selection | Gourmet Reserve</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/tableSelection.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/tableSelection.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
@@ -48,6 +50,31 @@
         if (reservedTables == null) {
             reservedTables = new ArrayList<>();
         }
+
+        // Get all tables from request attribute
+        List<Table> allTables = (List<Table>) request.getAttribute("allTables");
+        if (allTables == null) {
+            allTables = new ArrayList<>();
+        }
+
+        // Group tables by floor and type for easy access in JavaScript
+        Map<Integer, Map<String, List<Table>>> tablesByFloorAndType = new HashMap<>();
+
+        for (Table table : allTables) {
+            int floor = table.getFloor();
+            String type = table.getTableType();
+
+            if (!tablesByFloorAndType.containsKey(floor)) {
+                tablesByFloorAndType.put(floor, new HashMap<>());
+            }
+
+            Map<String, List<Table>> floorTables = tablesByFloorAndType.get(floor);
+            if (!floorTables.containsKey(type)) {
+                floorTables.put(type, new ArrayList<>());
+            }
+
+            floorTables.get(type).add(table);
+        }
     %>
 
     <!-- Header Navigation -->
@@ -55,7 +82,7 @@
         <a href="${pageContext.request.contextPath}/" class="logo">Gourmet Reserve</a>
         <div class="nav-links">
             <a href="${pageContext.request.contextPath}/reservation/dateSelection">Reservations</a>
-          <a href="${pageContext.request.contextPath}/user/profile">Profile</a>
+            <a href="${pageContext.request.contextPath}/user/profile">Profile</a>
             <a href="${pageContext.request.contextPath}/user/logout">Logout</a>
         </div>
     </nav>
@@ -73,7 +100,6 @@
     </div>
 
     <!-- Floor Maps -->
-
     <div class="floor-map" id="floor-1-map">
         <div class="d-flex justify-content-between mb-4">
             <h3>First Floor Layout</h3>
@@ -102,25 +128,35 @@
     </div>
     <% } %>
 
+
+    <!-- Add server-side tables data for client-side JavaScript -->
     <script>
-// Store reservation details from JSP
-const reservationDetails = {
-    date: "<%= reservationDate %>",
-    time: "<%= reservationTime %>",
-    username: "<%= username %>",
-    bookingType: "<%= bookingType %>",
-    duration: parseInt("<%= reservationDuration %>")
+// Declare serverTablesData and serverReservedTables at the top level to ensure they're available globally
+// These will be populated either from server-side data or defaults
+const serverTablesData = {
+    1: {
+        family: [],
+        regular: [],
+        couple: []
+    },
+    2: {
+        family: [],
+        luxury: [],
+        couple: []
+    }
 };
 
-// Initialize reserved tables from server data
-const serverReservedTables = [
-    <% if (reservedTables != null && !reservedTables.isEmpty()) {
-        for (int i = 0; i < reservedTables.size(); i++) { %>
-            "<%= reservedTables.get(i) %>"<%= i < reservedTables.size() - 1 ? "," : "" %>
-    <% } } %>
-];
+// List of reserved table IDs (will be populated from server-side data)
+const serverReservedTables = [];
 
-console.log("Received reserved tables from server:", serverReservedTables);
+// Store reservation details from JSP
+const reservationDetails = {
+    date: "${reservationDate}",
+    time: "${reservationTime}",
+    username: "${username}",
+    bookingType: "${bookingType}",
+    duration: parseInt("${reservationDuration}")
+};
 
 // Enhanced Queue implementation for table reservation
 // This is a client-side implementation that mirrors the server-side ReservationQueue class
@@ -310,37 +346,83 @@ let reservationQueue = new ReservationQueue();
 // Initialize the floor configuration with table information from database
 const floorConfig = {
     1: {
-        tables: [
-            { type: "family", chairs: 6, count: 0, reserved: [], id: "f1-" },
-            { type: "regular", chairs: 4, count: 0, reserved: [], id: "r1-" },
-            { type: "couple", chairs: 2, count: 0, reserved: [], id: "c1-" },
-        ],
+        tables: []
     },
     2: {
-        tables: [
-            { type: "family", chairs: 6, count: 0, reserved: [], id: "f2-" },
-            { type: "luxury", chairs: 10, count: 0, reserved: [], id: "l2-" },
-            { type: "couple", chairs: 2, count: 0, reserved: [], id: "c2-" },
-        ],
-    },
+        tables: []
+    }
 };
 
 // Process the server-provided tables
 function initializeTablesFromDatabase() {
     console.log("Initializing tables from database");
 
-    // Use fallback configuration
-    floorConfig[1].tables[0].count = 4; // family
-    floorConfig[1].tables[1].count = 10; // regular
-    floorConfig[1].tables[2].count = 4; // couple
-    floorConfig[2].tables[0].count = 6; // family
-    floorConfig[2].tables[1].count = 4; // luxury
-    floorConfig[2].tables[2].count = 6; // couple
+    // Check if we have server data available
+    const hasServerData = Object.keys(serverTablesData).length > 0;
 
-    console.log("Tables initialization complete with fallback configuration");
+    if (hasServerData) {
+        console.log("Using server-provided table data");
+
+        // Loop through serverTablesData and populate floorConfig
+        Object.keys(serverTablesData).forEach(floorNumber => {
+            const floor = parseInt(floorNumber);
+            const floorTables = serverTablesData[floorNumber];
+
+            // Skip if floor data is undefined or empty
+            if (!floorTables) return;
+
+            Object.keys(floorTables).forEach(tableType => {
+                const tablesOfType = floorTables[tableType];
+
+                // Skip if table type data is undefined or empty
+                if (!tablesOfType || !tablesOfType.length) return;
+
+                // Create or update the table entry in floorConfig
+                if (!floorConfig[floor].tables.find(t => t.type === tableType)) {
+                    floorConfig[floor].tables.push({
+                        type: tableType,
+                        chairs: getCapacityForType(tableType),
+                        count: tablesOfType.length,
+                        reserved: [],
+                        id: `${tableType.charAt(0)}${floor}-`
+                    });
+                }
+            });
+        });
+    }
+
+    // If no tables were found from server or floorConfig is still empty, use fallback data
+    if (!hasServerData || floorConfig[1].tables.length === 0) {
+        console.log("Using fallback table configuration");
+
+        floorConfig[1].tables = [
+            { type: "family", chairs: 6, count: 4, reserved: [], id: "f1-" },
+            { type: "regular", chairs: 4, count: 10, reserved: [], id: "r1-" },
+            { type: "couple", chairs: 2, count: 4, reserved: [], id: "c1-" }
+        ];
+
+        floorConfig[2].tables = [
+            { type: "family", chairs: 6, count: 6, reserved: [], id: "f2-" },
+            { type: "luxury", chairs: 10, count: 4, reserved: [], id: "l2-" },
+            { type: "couple", chairs: 2, count: 6, reserved: [], id: "c2-" }
+        ];
+    }
+
+    console.log("Tables initialization complete", floorConfig);
 
     // Process reserved tables from the server data
     processReservedTables();
+}
+
+// Helper function to get capacity based on table type
+function getCapacityForType(tableType) {
+    switch(tableType.toLowerCase()) {
+        case 'family': return 6;
+        case 'luxury': return 10;
+        case 'regular': return 4;
+        case 'couple': return 2;
+        default: return 4;
+    }
 }
 
 // Process the reserved tables from server
@@ -375,6 +457,40 @@ function processReservedTables() {
     }
 
     console.log("Reserved tables processing complete");
+}
+
+function showFloor(floorNumber) {
+    console.log("Showing floor", floorNumber);
+
+    rotateBuilding = false;
+    gsap.to(scene.rotation, { y: 0, duration: 0.5 });
+    gsap.to(scene.position, { x: -30, duration: 1 });
+
+    // Ensure floorNumber is a number
+    floorNumber = Number(floorNumber);
+
+    // Use the correct ID format for the floor map
+    const floorMapId = "floor-" + floorNumber + "-map";
+    const floorMap = document.getElementById(floorMapId);
+
+    console.log("Looking for floor map with ID:", floorMapId);
+
+    if (!floorMap) {
+        console.error("Floor map element not found:", floorMapId);
+        return;
+    }
+
+    console.log("Found floor map element:", floorMap);
+
+    // First, make sure we have the latest reserved tables
+    refreshReservedTables(() => {
+        // Generate floor view after getting latest data
+        generateFloorView(floorNumber);
+
+        // Make sure the floor map is visible
+        floorMap.style.display = "block";
+        floorMap.style.opacity = "1";
+    });
 }
 
 function generateFloorView(floorNumber) {
@@ -728,40 +844,6 @@ function generateFloorView(floorNumber) {
     });
 }
 
-function showFloor(floorNumber) {
-    console.log("Showing floor", floorNumber);
-
-    rotateBuilding = false;
-    gsap.to(scene.rotation, { y: 0, duration: 0.5 });
-    gsap.to(scene.position, { x: -30, duration: 1 });
-
-    // Ensure floorNumber is a number
-    floorNumber = Number(floorNumber);
-
-    // Use the correct ID format for the floor map
-    const floorMapId = "floor-" + floorNumber + "-map";
-    const floorMap = document.getElementById(floorMapId);
-
-    console.log("Looking for floor map with ID:", floorMapId);
-
-    if (!floorMap) {
-        console.error("Floor map element not found:", floorMapId);
-        return;
-    }
-
-    console.log("Found floor map element:", floorMap);
-
-    // First, make sure we have the latest reserved tables
-    refreshReservedTables(() => {
-        // Generate floor view after getting latest data
-        generateFloorView(floorNumber);
-
-        // Make sure the floor map is visible
-        floorMap.style.display = "block";
-        floorMap.style.opacity = "1";
-    });
-}
-
 // Function to refresh the reserved tables from the server
 function refreshReservedTables(callback) {
     // Make AJAX call to get updated reserved tables - only tables with COMPLETED payments
@@ -961,305 +1043,300 @@ function handleReservation(type, number, floor, tableId) {
                         } catch (e) {
                             console.error("Error handling reservation response:", e);
                             alert("An error occurred while processing your reservation. Please try again.");
-                                                    }
-                                                } else {
-                                                    alert("Error creating reservation. Please try again.");
-                                                }
-                                            }
-                                        };
+                        }
+                    } else {
+                        alert("Error creating reservation. Please try again.");
+                    }
+                }
+            };
 
-                                        // Convert FormData to URL-encoded string
-                                        const urlEncodedData = new URLSearchParams(formData).toString();
-                                        console.log("Sending data:", urlEncodedData);
+            // Convert FormData to URL-encoded string
+            const urlEncodedData = new URLSearchParams(formData).toString();
+            console.log("Sending data:", urlEncodedData);
 
-                                        xhr.send(urlEncodedData);
-                                    });
+            xhr.send(urlEncodedData);
+        });
 
-                                    // Close button functionality
-                                    const closeButton = modal.querySelector(".close-btn");
-                                    closeButton.addEventListener("click", () => {
-                                        modal.remove();
-                                        overlay.remove();
-                                    });
+        // Close button functionality
+        const closeButton = modal.querySelector(".close-btn");
+        closeButton.addEventListener("click", () => {
+            modal.remove();
+            overlay.remove();
+        });
 
-                                    // Close when clicking outside
-                                    overlay.addEventListener("click", () => {
-                                        modal.remove();
-                                        overlay.remove();
-                                    });
-                                });
-                            }
+        // Close when clicking outside
+        overlay.addEventListener("click", () => {
+            modal.remove();
+            overlay.remove();
+        });
+    });
+}
 
-                            function closeFloorView() {
-                                gsap.to(scene.position, { x: 0, duration: 1 });
-                                document.querySelectorAll('.floor-map').forEach(map => {
-                                    gsap.to(map, {
-                                        opacity: 0,
-                                        duration: 0.5,
-                                        onComplete: function() {
-                                            map.style.display = "none";
-                                        }
-                                    });
-                                });
-                                rotateBuilding = true;
-                            }
+function closeFloorView() {
+    gsap.to(scene.position, { x: 0, duration: 1 });
+    document.querySelectorAll('.floor-map').forEach(map => {
+        gsap.to(map, {
+            opacity: 0,
+            duration: 0.5,
+            onComplete: function() {
+                map.style.display = "none";
+            }
+        });
+    });
+    rotateBuilding = true;
+}
 
-                            function init() {
-                                // Scene setup
-                                scene = new THREE.Scene();
-                                camera = new THREE.PerspectiveCamera(
-                                    75,
-                                    window.innerWidth / window.innerHeight,
-                                    0.1,
-                                    1000
-                                );
-                                renderer = new THREE.WebGLRenderer({ antialias: true });
-                                renderer.setSize(window.innerWidth, window.innerHeight);
-                                document
-                                    .getElementById("three-container")
-                                    .appendChild(renderer.domElement);
+function init() {
+    // Scene setup
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+    );
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document
+        .getElementById("three-container")
+        .appendChild(renderer.domElement);
 
-                                // Lighting
-                                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-                                scene.add(ambientLight);
-                                const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-                                directionalLight.position.set(10, 20, 15);
-                                scene.add(directionalLight);
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(10, 20, 15);
+    scene.add(directionalLight);
 
-                                // Create realistic restaurant
-                                createRestaurantBuilding();
+    // Create realistic restaurant
+    createRestaurantBuilding();
 
-                                camera.position.set(0, 15, 30);
-                                camera.lookAt(0, 0, 0);
+    camera.position.set(0, 15, 30);
+    camera.lookAt(0, 0, 0);
 
-                                animate();
-                            }
+    animate();
+}
 
-                            function animate() {
-                                requestAnimationFrame(animate);
-                                if (rotateBuilding && building) {
-                                    scene.rotation.y += 0.002;
-                                }
-                                renderer.render(scene, camera);
-                            }
+function animate() {
+    requestAnimationFrame(animate);
+    if (rotateBuilding && building) {
+        scene.rotation.y += 0.002;
+    }
+    renderer.render(scene, camera);
+}
 
-                            function onWindowResize() {
-                                camera.aspect = window.innerWidth / window.innerHeight;
-                                camera.updateProjectionMatrix();
-                                renderer.setSize(window.innerWidth, window.innerHeight);
-                            }
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
 
-                            function createFloorTables(building, yPos, floorNumber) {
-                                const floorGroup = new THREE.Group();
+function createFloorTables(building, yPos, floorNumber) {
+    const floorGroup = new THREE.Group();
 
-                                // Floor base
-                                const floorGeometry = new THREE.BoxGeometry(19.8, 0.2, 29.8);
-                                const floorMaterial = new THREE.MeshPhongMaterial({ color: 0x303030 });
-                                const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-                                floor.position.y = yPos;
-                                floorGroup.add(floor);
+    // Floor base
+    const floorGeometry = new THREE.BoxGeometry(19.8, 0.2, 29.8);
+    const floorMaterial = new THREE.MeshPhongMaterial({ color: 0x303030 });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.position.y = yPos;
+    floorGroup.add(floor);
 
-                                // Add tables
-                                const tableConfig = {
-                                    1: { family: 4, regular: 10, couple: 4 },
-                                    2: { family: 6, luxury: 4, couple: 6 },
-                                }[floorNumber];
+    // Add tables based on the floorConfig data
+    if (floorConfig[floorNumber] && floorConfig[floorNumber].tables) {
+        floorConfig[floorNumber].tables.forEach((tableType) => {
+            for (let i = 0; i < tableType.count; i++) {
+                const table = createTableMesh(tableType.type);
 
-                                if (!tableConfig) {
-                                    console.error("Invalid floor number:", floorNumber);
-                                    return;
-                                }
+                // Check if this table is reserved
+                const tableId = `${tableType.type.charAt(0)}${floorNumber}-${i+1}`;
+                const isReserved = serverReservedTables.includes(tableId);
 
-                                Object.entries(tableConfig).forEach(([type, count]) => {
-                                    for (let i = 0; i < count; i++) {
-                                        const table = createTableMesh(type);
+                // Color tables based on reservation status
+                if (isReserved) {
+                    table.material.color.set(0x8B0000); // Dark red for reserved tables
+                }
 
-                                        // Check if this table is reserved
-                                        const tableId = `${type.charAt(0)}${floorNumber}-${i+1}`;
-                                        const isReserved = serverReservedTables.includes(tableId);
+                // Position tables in a grid pattern
+                const row = Math.floor(i / 5);
+                const col = i % 5;
+                table.position.set(
+                    -8 + col * 4,  // X position (columns)
+                    yPos + 0.3,    // Y position (height above floor)
+                    -12 + row * 4  // Z position (rows)
+                );
 
-                                        // Color tables based on reservation status
-                                        if (isReserved) {
-                                            table.material.color.set(0x8B0000); // Dark red for reserved tables
-                                        }
+                floorGroup.add(table);
+            }
+        });
+    }
 
-                                        table.position.set(
-                                            -8 + (i % 5) * 4,
-                                            yPos + 0.3,
-                                            -12 + Math.floor(i / 5) * 4
-                                        );
-                                        floorGroup.add(table);
-                                    }
-                                });
+    building.add(floorGroup);
+}
 
-                                building.add(floorGroup);
-                            }
+function createTableMesh(type) {
+    const size = {
+        family: { width: 1.5, depth: 1.5, height: 0.1 },
+        luxury: { width: 2.5, depth: 2.5, height: 0.1 },
+        regular: { width: 1.2, depth: 1.2, height: 0.1 },
+        couple: { width: 1, depth: 1, height: 0.1 },
+    }[type] || { width: 1, depth: 1, height: 0.1 }; // Default size if type not found
 
-                            function createTableMesh(type) {
-                                const size = {
-                                    family: { width: 1.5, depth: 1.5, height: 0.1 },
-                                    luxury: { width: 2.5, depth: 2.5, height: 0.1 },
-                                    regular: { width: 1.2, depth: 1.2, height: 0.1 },
-                                    couple: { width: 1, depth: 1, height: 0.1 },
-                                }[type] || { width: 1, depth: 1, height: 0.1 }; // Default size if type not found
+    const tableGeometry = new THREE.BoxGeometry(
+        size.width,
+        size.height,
+        size.depth
+    );
+    const tableMaterial = new THREE.MeshPhongMaterial({ color: 0x4a4a4a });
+    const table = new THREE.Mesh(tableGeometry, tableMaterial);
 
-                                const tableGeometry = new THREE.BoxGeometry(
-                                    size.width,
-                                    size.height,
-                                    size.depth
-                                );
-                                const tableMaterial = new THREE.MeshPhongMaterial({ color: 0x4a4a4a });
-                                const table = new THREE.Mesh(tableGeometry, tableMaterial);
+    // Table legs
+    const legGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.4);
+    const legMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
 
-                                // Table legs
-                                const legGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.4);
-                                const legMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+    [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+    ].forEach(([xMod, zMod]) => {
+        const leg = new THREE.Mesh(legGeometry, legMaterial);
+        leg.position.set(
+            xMod * (size.width / 2 - 0.2),
+            -0.25,
+            zMod * (size.depth / 2 - 0.2)
+        );
+        table.add(leg);
+    });
 
-                                [
-                                    [-1, -1],
-                                    [1, -1],
-                                    [-1, 1],
-                                    [1, 1],
-                                ].forEach(([xMod, zMod]) => {
-                                    const leg = new THREE.Mesh(legGeometry, legMaterial);
-                                    leg.position.set(
-                                        xMod * (size.width / 2 - 0.2),
-                                        -0.25,
-                                        zMod * (size.depth / 2 - 0.2)
-                                    );
-                                    table.add(leg);
-                                });
+    return table;
+}
 
-                                return table;
-                            }
+function createRestaurantBuilding() {
+    // Main building
+    const mainBuilding = new THREE.Group();
 
-                            function createRestaurantBuilding() {
-                                // Main building
-                                const mainBuilding = new THREE.Group();
+    // Building structure
+    const geometry = new THREE.BoxGeometry(20, 10, 30);
+    const textureLoader = new THREE.TextureLoader();
 
-                                // Building structure
-                                const geometry = new THREE.BoxGeometry(20, 10, 30);
-                                const textureLoader = new THREE.TextureLoader();
+    // Use placeholder texture if the image fails to load
+    const wallTexture = new THREE.MeshPhongMaterial({ color: 0xD2B48C });
+    textureLoader.load(
+        "https://threejsfundamentals.org/threejs/resources/images/wall.jpg",
+        function(texture) {
+            wallTexture.map = texture;
+            wallTexture.needsUpdate = true;
+        }
+    );
 
-                                // Use placeholder texture if the image fails to load
-                                const wallTexture = new THREE.MeshPhongMaterial({ color: 0xD2B48C });
-                                textureLoader.load(
-                                    "https://threejsfundamentals.org/threejs/resources/images/wall.jpg",
-                                    function(texture) {
-                                        wallTexture.map = texture;
-                                        wallTexture.needsUpdate = true;
-                                    }
-                                );
+    const buildingMesh = new THREE.Mesh(geometry, wallTexture);
 
-                                const buildingMesh = new THREE.Mesh(geometry, wallTexture);
+    // Roof
+    const roofGeometry = new THREE.ConeGeometry(22, 6, 4);
+    const roofMaterial = new THREE.MeshPhongMaterial({
+        color: 0x8b4513, // Dark wood color
+        shininess: 100,
+    });
+    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+    roof.rotation.y = Math.PI / 4;
+    roof.position.y = 7.8;
 
-                                // Roof
-                                const roofGeometry = new THREE.ConeGeometry(22, 6, 4);
-                                const roofMaterial = new THREE.MeshPhongMaterial({
-                                    color: 0x8b4513, // Dark wood color
-                                    shininess: 100,
-                                });
-                                const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-                                roof.rotation.y = Math.PI / 4;
-                                roof.position.y = 7.8;
+    // Windows
+    const windowGeometry = new THREE.BoxGeometry(3, 4, 0.5);
+    const windowMaterial = new THREE.MeshPhongMaterial({
+        color: 0x87ceeb,
+        transparent: true,
+        opacity: 0.7,
+    });
 
-                                // Windows
-                                const windowGeometry = new THREE.BoxGeometry(3, 4, 0.5);
-                                const windowMaterial = new THREE.MeshPhongMaterial({
-                                    color: 0x87ceeb,
-                                    transparent: true,
-                                    opacity: 0.7,
-                                });
+    for (let i = -7; i <= 7; i += 8) {
+        for (let j = -6; j <= 6; j += 12) {
+            const window = new THREE.Mesh(windowGeometry, windowMaterial);
+            window.position.set(j, 1, i > 0 ? 14.9 : -14.9);
+            buildingMesh.add(window);
+        }
+    }
 
-                                for (let i = -7; i <= 7; i += 8) {
-                                    for (let j = -6; j <= 6; j += 12) {
-                                        const window = new THREE.Mesh(windowGeometry, windowMaterial);
-                                        window.position.set(j, 1, i > 0 ? 14.9 : -14.9);
-                                        buildingMesh.add(window);
-                                    }
-                                }
+    // Entrance
+    const entranceGeometry = new THREE.BoxGeometry(6, 4, 4);
+    const entranceMaterial = new THREE.MeshPhongMaterial({
+        color: 0xcd8500,
+    });
+    const entrance = new THREE.Mesh(entranceGeometry, entranceMaterial);
+    entrance.position.z = 15.1;
+    entrance.position.y = -1.5;
 
-                                // Entrance
-                                const entranceGeometry = new THREE.BoxGeometry(6, 4, 4);
-                                const entranceMaterial = new THREE.MeshPhongMaterial({
-                                    color: 0xcd8500,
-                                });
-                                const entrance = new THREE.Mesh(entranceGeometry, entranceMaterial);
-                                entrance.position.z = 15.1;
-                                entrance.position.y = -1.5;
+    // Signboard
+    const signGeometry = new THREE.BoxGeometry(8, 1, 0.2);
+    const signMaterial = new THREE.MeshPhongMaterial({ color: 0xffd700 });
+    const sign = new THREE.Mesh(signGeometry, signMaterial);
+    sign.position.set(0, 7, 15.1);
 
-                                // Signboard
-                                const signGeometry = new THREE.BoxGeometry(8, 1, 0.2);
-                                const signMaterial = new THREE.MeshPhongMaterial({ color: 0xffd700 });
-                                const sign = new THREE.Mesh(signGeometry, signMaterial);
-                                sign.position.set(0, 7, 15.1);
+    // Parking lot
+    const parkingLot = new THREE.Mesh(
+        new THREE.PlaneGeometry(40, 50),
+        new THREE.MeshPhongMaterial({ color: 0x444444 })
+    );
+    parkingLot.rotation.x = -Math.PI / 2;
+    parkingLot.position.y = -5.1;
 
-                                // Parking lot
-                                const parkingLot = new THREE.Mesh(
-                                    new THREE.PlaneGeometry(40, 50),
-                                    new THREE.MeshPhongMaterial({ color: 0x444444 })
-                                );
-                                parkingLot.rotation.x = -Math.PI / 2;
-                                parkingLot.position.y = -5.1;
+    // Assemble building
+    mainBuilding.add(buildingMesh);
+    mainBuilding.add(roof);
+    mainBuilding.add(entrance);
+    mainBuilding.add(sign);
+    mainBuilding.add(parkingLot);
 
-                                // Assemble building
-                                mainBuilding.add(buildingMesh);
-                                mainBuilding.add(roof);
-                                mainBuilding.add(entrance);
-                                mainBuilding.add(sign);
-                                mainBuilding.add(parkingLot);
+    // Add tables
+    createFloorTables(mainBuilding, -4, 1);
+    createFloorTables(mainBuilding, 4, 2);
 
-                                // Add tables
-                                createFloorTables(mainBuilding, -4, 1);
-                                createFloorTables(mainBuilding, 4, 2);
+    scene.add(mainBuilding);
+    building = mainBuilding;
+}
 
-                                scene.add(mainBuilding);
-                                building = mainBuilding;
-                            }
+// Initialize the tables and start the 3D scene
+initializeTablesFromDatabase();
+init(); // Initialize the 3D scene
 
-                            // Initialize the tables and start the 3D scene
-                            initializeTablesFromDatabase();
-                            init(); // Initialize the 3D scene
+// Event listeners for floor buttons
+document.getElementById("floor1").addEventListener("click", function() {
+    showFloor(1);
+});
 
-                            // Event listeners for floor buttons
-                            document.getElementById("floor1").addEventListener("click", function() {
-                                showFloor(1);
-                            });
+document.getElementById("floor2").addEventListener("click", function() {
+    showFloor(2);
+});
 
-                            document.getElementById("floor2").addEventListener("click", function() {
-                                showFloor(2);
-                            });
+// Handle window resize
+window.addEventListener("resize", onWindowResize);
 
-                            // Handle window resize
-                            window.addEventListener("resize", onWindowResize);
+// Refresh reserved tables every 30 seconds to keep the view updated
+setInterval(function() {
+    if (!rotateBuilding) { // Only refresh if user is viewing a floor
+        refreshReservedTables(() => {
+            // After refreshing, update the current floor view if it's open
+            const visibleFloorMap = document.querySelector('.floor-map[style*="display: block"]');
+            if (visibleFloorMap) {
+                const floorNumber = visibleFloorMap.id.split('-')[1];
+                if (floorNumber) {
+                    generateFloorView(parseInt(floorNumber));
+                }
+            }
+        });
+    }
+}, 30000);
 
-                            // Refresh reserved tables every 30 seconds to keep the view updated
-                            setInterval(function() {
-                                if (!rotateBuilding) { // Only refresh if user is viewing a floor
-                                    refreshReservedTables(() => {
-                                        // After refreshing, update the current floor view if it's open
-                                        const visibleFloorMap = document.querySelector('.floor-map[style*="display: block"]');
-                                        if (visibleFloorMap) {
-                                            const floorNumber = visibleFloorMap.id.split('-')[1];
-                                            if (floorNumber) {
-                                                generateFloorView(parseInt(floorNumber));
-                                            }
-                                        }
-                                    });
-                                }
-                            }, 30000);
-
-                            // Show error toast if exists and then fade it out
-                            const errorToast = document.querySelector('.error-toast');
-                            if (errorToast) {
-                                setTimeout(() => {
-                                    errorToast.style.opacity = '0';
-                                    setTimeout(() => {
-                                        errorToast.style.display = 'none';
-                                    }, 500);
-                                }, 3000);
-                            }
-
-                            </script>
-                    </body>
-                    </html>
+// Show error toast if exists and then fade it out
+const errorToast = document.querySelector('.error-toast');
+if (errorToast) {
+    setTimeout(() => {
+        errorToast.style.opacity = '0';
+        setTimeout(() => {
+            errorToast.style.display = 'none';
+        }, 500);
+    }, 3000);
+}
+</script>
+</body>
+</html>

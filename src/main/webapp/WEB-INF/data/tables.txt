@@ -34,3 +34,4 @@ c2-5,5,family,6,2,Second floor balcony section,true
 c2-6,6,luxury,10,2,Second floor balcony section,true
 c2-7,7,couple,2,2,,true
 l1-1,1,luxury,10,1,new luxuary table,true
+l1-2,2,luxury,10,1,test,true

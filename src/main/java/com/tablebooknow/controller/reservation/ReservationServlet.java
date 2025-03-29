@@ -8,6 +8,8 @@ import com.tablebooknow.dao.TableDAO;
 import com.tablebooknow.model.reservation.Reservation;
 import com.tablebooknow.model.table.Table;
 import com.tablebooknow.util.ReservationQueue;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -16,13 +18,16 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @WebServlet("/reservation/*")
@@ -69,6 +74,9 @@ public class ReservationServlet extends HttpServlet {
                 break;
             case "/getReservedTables":
                 handleGetReservedTablesRequest(request, response);
+                break;
+            case "/getAllTables":
+                handleGetAllTablesRequest(request, response);
                 break;
             default:
                 System.out.println("Unknown path: " + pathInfo + ", redirecting to date selection page");
@@ -118,10 +126,6 @@ public class ReservationServlet extends HttpServlet {
      * Handles the table selection page request.
      * This method loads all available and reserved tables for the selected date and time.
      */
-    /**
-     * Handles the table selection page request.
-     * This method loads all available and reserved tables for the selected date and time.
-     */
     private void handleTableSelectionRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // Get reservation date and time from session or request
         HttpSession session = request.getSession();
@@ -164,8 +168,19 @@ public class ReservationServlet extends HttpServlet {
             duration = (bookingType.equals("special")) ? 3 : 2;
         }
 
+        // Get all tables from database
+        List<Table> allTables;
+        try {
+            allTables = tableDAO.findAllActive();
+            System.out.println("Found " + allTables.size() + " active tables");
+        } catch (Exception e) {
+            System.err.println("Error getting active tables: " + e.getMessage());
+            e.printStackTrace();
+            allTables = new ArrayList<>();
+        }
+
         // Get all reserved tables for this date and time
-        List<String> reservedTables = null;
+        List<String> reservedTables;
         try {
             reservedTables = reservationDAO.getReservedTables(reservationDate, reservationTime, duration);
             System.out.println("Found " + reservedTables.size() + " reserved tables: " + reservedTables);
@@ -175,26 +190,58 @@ public class ReservationServlet extends HttpServlet {
             reservedTables = new ArrayList<>();
         }
 
-        // Get all active tables from our database
-        List<Table> activeTables = new ArrayList<>();
-        try {
-            activeTables = tableDAO.findAllActive();
-            System.out.println("Found " + activeTables.size() + " active tables");
-        } catch (Exception e) {
-            System.err.println("Error getting active tables: " + e.getMessage());
-            e.printStackTrace();
-        }
-
         // Store the data in session for use by the JSP
         session.setAttribute("reservationDate", reservationDate);
         session.setAttribute("reservationTime", reservationTime);
         session.setAttribute("bookingType", bookingType);
         session.setAttribute("reservationDuration", reservationDuration);
         request.setAttribute("reservedTables", reservedTables);
-        // We'll send the reservedTables but not use activeTables directly in the JSP
+        request.setAttribute("allTables", allTables);
 
         System.out.println("Forwarding to table selection JSP");
         request.getRequestDispatcher("/tableSelection.jsp").forward(request, response);
+    }
+
+    /**
+     * Handle AJAX request for getting all tables.
+     */
+    private void handleGetAllTablesRequest(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        try {
+            List<Table> allTables = tableDAO.findAllActive();
+
+            // Group tables by floor and type
+            Map<Integer, Map<String, List<Table>>> tablesByFloorAndType = new HashMap<>();
+
+            for (Table table : allTables) {
+                int floor = table.getFloor();
+                String type = table.getTableType();
+
+                if (!tablesByFloorAndType.containsKey(floor)) {
+                    tablesByFloorAndType.put(floor, new HashMap<>());
+                }
+
+                Map<String, List<Table>> floorTables = tablesByFloorAndType.get(floor);
+                if (!floorTables.containsKey(type)) {
+                    floorTables.put(type, new ArrayList<>());
+                }
+
+                floorTables.get(type).add(table);
+            }
+
+            // Create response JSON
+            Gson gson = new GsonBuilder().create();
+            String json = gson.toJson(tablesByFloorAndType);
+
+            PrintWriter out = response.getWriter();
+            out.print(json);
+            out.flush();
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
+        }
     }
 
     /**
@@ -363,7 +410,7 @@ public class ReservationServlet extends HttpServlet {
     }
 
     // In src/main/java/com/tablebooknow/controller/reservation/ReservationServlet.java
-// Modify the confirmReservation method to redirect directly to payment instead of confirmation
+    // Modify the confirmReservation method to redirect directly to payment instead of confirmation
 
     private void confirmReservation(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.println("Confirming reservation");

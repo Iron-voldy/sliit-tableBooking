@@ -87,7 +87,7 @@ public class TableDAO {
                             return table;
                         }
                     } catch (Exception e) {
-                        System.err.println("Error parsing table line: " + line);
+                        System.err.println("Error parsing table line: " + line + ", error: " + e.getMessage());
                         // Continue to next line on error
                     }
                 }
@@ -119,7 +119,7 @@ public class TableDAO {
                             floorTables.add(table);
                         }
                     } catch (Exception e) {
-                        System.err.println("Error parsing table line: " + line);
+                        System.err.println("Error parsing table line: " + line + ", error: " + e.getMessage());
                         // Continue to next line on error
                     }
                 }
@@ -151,7 +151,7 @@ public class TableDAO {
                             typeTables.add(table);
                         }
                     } catch (Exception e) {
-                        System.err.println("Error parsing table line: " + line);
+                        System.err.println("Error parsing table line: " + line + ", error: " + e.getMessage());
                         // Continue to next line on error
                     }
                 }
@@ -169,6 +169,7 @@ public class TableDAO {
         List<Table> activeTables = new ArrayList<>();
 
         if (!FileHandler.fileExists(FILE_PATH)) {
+            System.out.println("Tables file does not exist: " + FILE_PATH);
             return activeTables;
         }
 
@@ -182,11 +183,16 @@ public class TableDAO {
                             activeTables.add(table);
                         }
                     } catch (Exception e) {
-                        System.err.println("Error parsing table line: " + line);
+                        System.err.println("Error parsing table line: " + line + ", error: " + e.getMessage());
+                        e.printStackTrace();
                         // Continue to next line on error
                     }
                 }
             }
+        } catch (IOException e) {
+            System.err.println("Error reading tables file: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
 
         return activeTables;
@@ -289,21 +295,30 @@ public class TableDAO {
         List<Table> tables = new ArrayList<>();
 
         if (!FileHandler.fileExists(FILE_PATH)) {
+            System.out.println("Tables file does not exist: " + FILE_PATH);
             return tables;
         }
 
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_PATH))) {
             String line;
+            int lineNumber = 0;
             while ((line = reader.readLine()) != null) {
+                lineNumber++;
                 if (!line.trim().isEmpty()) {
                     try {
                         tables.add(Table.fromCsvString(line));
                     } catch (Exception e) {
-                        System.err.println("Error parsing table line: " + line);
+                        System.err.println("Error parsing table line " + lineNumber + ": " + line);
+                        System.err.println("Error details: " + e.getMessage());
+                        e.printStackTrace();
                         // Continue to next line on error
                     }
                 }
             }
+        } catch (IOException e) {
+            System.err.println("Error reading tables file: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
 
         return tables;
