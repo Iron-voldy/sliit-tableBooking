@@ -1,6 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="com.tablebooknow.model.table.Table" %>
+<%@ page import="com.tablebooknow.dao.TableDAO" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -208,23 +210,86 @@ let scene, camera, renderer, building;
 let rotateBuilding = true;
 let reservationQueue = new ReservationQueue();
 
-// Initialize the floor configuration with table information
+// Initialize the floor configuration with table information from database
 const floorConfig = {
     1: {
         tables: [
-            { type: "family", chairs: 6, count: 4, reserved: [], id: "f1-" },
-            { type: "regular", chairs: 4, count: 10, reserved: [], id: "r1-" },
-            { type: "couple", chairs: 2, count: 4, reserved: [], id: "c1-" },
+            { type: "family", chairs: 6, count: 0, reserved: [], id: "f1-" },
+            { type: "regular", chairs: 4, count: 0, reserved: [], id: "r1-" },
+            { type: "couple", chairs: 2, count: 0, reserved: [], id: "c1-" },
         ],
     },
     2: {
         tables: [
-            { type: "family", chairs: 6, count: 6, reserved: [], id: "f2-" },
-            { type: "luxury", chairs: 10, count: 4, reserved: [], id: "l2-" },
-            { type: "couple", chairs: 2, count: 6, reserved: [], id: "c2-" },
+            { type: "family", chairs: 6, count: 0, reserved: [], id: "f2-" },
+            { type: "luxury", chairs: 10, count: 0, reserved: [], id: "l2-" },
+            { type: "couple", chairs: 2, count: 0, reserved: [], id: "c2-" },
         ],
     },
 };
+
+    function processReservedTables(){
+    // Get reserved tables from request attribute
+            List<String> reservedTables = (List<String>) request.getAttribute("reservedTables");
+            if (reservedTables == null) {
+                reservedTables = new ArrayList<>();
+            }
+
+            // Get active tables from database
+            List<Table> activeTables = (List<Table>) request.getAttribute("activeTables");
+            if (activeTables == null) {
+                activeTables = new ArrayList<>();
+
+                // Fallback to loading tables if not provided
+                try {
+                    TableDAO tableDao = new TableDAO();
+                    activeTables = tableDao.findAllActive();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+    }
+
+// Process the server-provided tables
+function initializeTablesFromDatabase() {
+    <% if (activeTables != null && !activeTables.isEmpty()) { %>
+        console.log("Processing tables from database");
+
+        <% for (Table table : activeTables) {
+            String tableId = table.getId();
+            String tableType = table.getTableType();
+            int floor = table.getFloor();
+            int capacity = table.getCapacity();
+
+            if (tableId != null && tableType != null) {
+        %>
+            // Add table to floor configuration
+            for (const floorNum in floorConfig) {
+                if (parseInt(floorNum) === <%= floor %>) {
+                    for (const tableTypeConfig of floorConfig[floorNum].tables) {
+                        if (tableTypeConfig.type === "<%= tableType %>") {
+                            // Increment counter
+                            tableTypeConfig.count++;
+                            console.log("Added <%= tableType %> table <%= tableId %> to floor <%= floor %>");
+                            break;
+                        }
+                    }
+                }
+            }
+        <% } } %>
+
+        console.log("Tables initialization complete");
+    <% } else { %>
+        // Fallback to default configuration
+        console.log("No tables from database, using default configuration");
+        floorConfig[1].tables[0].count = 4; // family
+        floorConfig[1].tables[1].count = 10; // regular
+        floorConfig[1].tables[2].count = 4; // couple
+        floorConfig[2].tables[0].count = 6; // family
+        floorConfig[2].tables[1].count = 4; // luxury
+        floorConfig[2].tables[2].count = 6; // couple
+    <% } %>
+}
 
 // Process the server-provided reserved tables
 function processReservedTables() {
@@ -261,6 +326,7 @@ function processReservedTables() {
 }
 
 // Process the reserved tables from server
+initializeTablesFromDatabase();
 processReservedTables();
 
 function init() {

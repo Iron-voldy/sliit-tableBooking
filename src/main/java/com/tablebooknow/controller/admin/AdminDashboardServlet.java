@@ -5,6 +5,13 @@ import com.tablebooknow.dao.ReservationDAO;
 import com.tablebooknow.dao.UserDAO;
 import com.tablebooknow.model.reservation.Reservation;
 import com.tablebooknow.model.user.User;
+import com.tablebooknow.dao.AdminDAO;
+import com.tablebooknow.dao.ReservationDAO;
+import com.tablebooknow.dao.UserDAO;
+import com.tablebooknow.dao.TableDAO;
+import com.tablebooknow.model.reservation.Reservation;
+import com.tablebooknow.model.user.User;
+import com.tablebooknow.model.table.Table;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -25,11 +32,13 @@ import java.util.Map;
 public class AdminDashboardServlet extends HttpServlet {
     private UserDAO userDAO;
     private ReservationDAO reservationDAO;
+    private TableDAO tableDAO;
 
     @Override
     public void init() throws ServletException {
         userDAO = new UserDAO();
         reservationDAO = new ReservationDAO();
+        tableDAO = new TableDAO();
     }
 
     @Override
@@ -47,6 +56,31 @@ public class AdminDashboardServlet extends HttpServlet {
 
             List<Reservation> allReservations = reservationDAO.findAll();
             int totalReservations = allReservations.size();
+
+            // Get table statistics
+            List<Table> allTables = tableDAO.findAll();
+            int totalTables = allTables.size();
+
+            // Count tables by type
+            int familyTables = 0;
+            int luxuryTables = 0;
+            int regularTables = 0;
+            int coupleTables = 0;
+
+            for (Table table : allTables) {
+                String type = table.getTableType();
+                if (type != null) {
+                    if (type.equalsIgnoreCase("family")) {
+                        familyTables++;
+                    } else if (type.equalsIgnoreCase("luxury")) {
+                        luxuryTables++;
+                    } else if (type.equalsIgnoreCase("regular")) {
+                        regularTables++;
+                    } else if (type.equalsIgnoreCase("couple")) {
+                        coupleTables++;
+                    }
+                }
+            }
 
             // Count reservations by status
             int pendingReservations = 0;
@@ -78,6 +112,13 @@ public class AdminDashboardServlet extends HttpServlet {
             request.setAttribute("confirmedReservations", confirmedReservations);
             request.setAttribute("cancelledReservations", cancelledReservations);
             request.setAttribute("upcomingReservations", upcomingReservations);
+
+            // Set table statistics
+            request.setAttribute("totalTables", totalTables);
+            request.setAttribute("familyTables", familyTables);
+            request.setAttribute("luxuryTables", luxuryTables);
+            request.setAttribute("regularTables", regularTables);
+            request.setAttribute("coupleTables", coupleTables);
 
             // Forward to dashboard JSP
             request.getRequestDispatcher("/admin-dashboard.jsp").forward(request, response);

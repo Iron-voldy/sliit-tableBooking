@@ -4,21 +4,34 @@
     // Get attributes specific to dashboard
     List<Reservation> upcomingReservations = (List<Reservation>) request.getAttribute("upcomingReservations");
 
-    // Stats
-    Integer totalUsers = (Integer) request.getAttribute("totalUsers");
-    Integer totalReservations = (Integer) request.getAttribute("totalReservations");
-    Integer pendingReservations = (Integer) request.getAttribute("pendingReservations");
-    Integer confirmedReservations = (Integer) request.getAttribute("confirmedReservations");
+        // Stats
+        Integer totalUsers = (Integer) request.getAttribute("totalUsers");
+        Integer totalReservations = (Integer) request.getAttribute("totalReservations");
+        Integer pendingReservations = (Integer) request.getAttribute("pendingReservations");
+        Integer confirmedReservations = (Integer) request.getAttribute("confirmedReservations");
 
-    // Format values or set defaults if null
-    if (totalUsers == null) totalUsers = 0;
-    if (totalReservations == null) totalReservations = 0;
-    if (pendingReservations == null) pendingReservations = 0;
-    if (confirmedReservations == null) confirmedReservations = 0;
+        // Table stats
+        Integer totalTables = (Integer) request.getAttribute("totalTables");
+        Integer familyTables = (Integer) request.getAttribute("familyTables");
+        Integer luxuryTables = (Integer) request.getAttribute("luxuryTables");
+        Integer regularTables = (Integer) request.getAttribute("regularTables");
+        Integer coupleTables = (Integer) request.getAttribute("coupleTables");
+
+        // Format values or set defaults if null
+        if (totalUsers == null) totalUsers = 0;
+        if (totalReservations == null) totalReservations = 0;
+        if (pendingReservations == null) pendingReservations = 0;
+        if (confirmedReservations == null) confirmedReservations = 0;
+        if (totalTables == null) totalTables = 0;
+        if (familyTables == null) familyTables = 0;
+        if (luxuryTables == null) luxuryTables = 0;
+        if (regularTables == null) regularTables = 0;
+        if (coupleTables == null) coupleTables = 0;
 %>
 
 <h1 style="color: var(--gold); margin-bottom: 2rem;">Dashboard Overview</h1>
 
+<!-- Quick Access Buttons -->
 <!-- Quick Access Buttons -->
 <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
     <a href="${pageContext.request.contextPath}/admin/reservations/queue" class="action-btn edit-btn" style="display: flex; align-items: center; justify-content: center; padding: 1rem; background-color: #4CAF50;">
@@ -30,14 +43,13 @@
     <a href="${pageContext.request.contextPath}/admin/users" class="action-btn edit-btn" style="display: flex; align-items: center; justify-content: center; padding: 1rem;">
         <span style="margin-right: 0.5rem;">👥</span> Manage Users
     </a>
-    <a href="${pageContext.request.contextPath}/admin/tables" class="action-btn edit-btn" style="display: flex; align-items: center; justify-content: center; padding: 1rem;">
+    <a href="${pageContext.request.contextPath}/admin/tables" class="action-btn edit-btn" style="display: flex; align-items: center; justify-content: center; padding: 1rem; background-color: #FFC107;">
         <span style="margin-right: 0.5rem;">🍽️</span> Manage Tables
     </a>
     <a href="${pageContext.request.contextPath}/admin/qr" class="action-btn edit-btn" style="display: flex; align-items: center; justify-content: center; padding: 1rem;">
         <span style="margin-right: 0.5rem;">📷</span> QR Scanner
     </a>
 </div>
-
 <!-- Statistics Cards -->
 <div class="stats-grid">
     <div class="stat-card">
@@ -55,6 +67,51 @@
     <div class="stat-card">
         <div class="stat-number"><%= confirmedReservations %></div>
         <div class="stat-label">Confirmed Reservations</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number"><%= totalTables %></div>
+        <div class="stat-label">Total Tables</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number"><%= familyTables %></div>
+        <div class="stat-label">Family Tables</div>
+    </div>
+</div>
+
+<!-- Table Type Distribution Card -->
+<div class="card" style="margin-bottom: 2rem;">
+    <h3 style="margin-bottom: 1rem; color: var(--gold);">Table Distribution by Type</h3>
+    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <div style="flex: <%= familyTables %>; background-color: #FFC107; height: 30px; display: flex; justify-content: center; align-items: center; color: #333; font-weight: bold; min-width: 40px; border-radius: 4px;">
+            <%= familyTables %>
+        </div>
+        <div style="flex: <%= luxuryTables %>; background-color: #2196F3; height: 30px; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; min-width: 40px; border-radius: 4px;">
+            <%= luxuryTables %>
+        </div>
+        <div style="flex: <%= regularTables %>; background-color: #9C27B0; height: 30px; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; min-width: 40px; border-radius: 4px;">
+            <%= regularTables %>
+        </div>
+        <div style="flex: <%= coupleTables %>; background-color: #FF5722; height: 30px; display: flex; justify-content: center; align-items: center; color: white; font-weight: bold; min-width: 40px; border-radius: 4px;">
+            <%= coupleTables %>
+        </div>
+    </div>
+    <div style="display: flex; gap: 1rem; margin-top: 0.5rem; justify-content: space-between;">
+        <div style="display: flex; align-items: center;">
+            <div style="width: 12px; height: 12px; background-color: #FFC107; margin-right: 5px; border-radius: 2px;"></div>
+            <span>Family</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <div style="width: 12px; height: 12px; background-color: #2196F3; margin-right: 5px; border-radius: 2px;"></div>
+            <span>Luxury</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <div style="width: 12px; height: 12px; background-color: #9C27B0; margin-right: 5px; border-radius: 2px;"></div>
+            <span>Regular</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <div style="width: 12px; height: 12px; background-color: #FF5722; margin-right: 5px; border-radius: 2px;"></div>
+            <span>Couple</span>
+        </div>
     </div>
 </div>
 

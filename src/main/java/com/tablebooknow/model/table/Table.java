@@ -1,6 +1,7 @@
 package com.tablebooknow.model.table;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * Represents a restaurant table in the system.
@@ -18,7 +19,21 @@ public class Table implements Serializable {
      * Default constructor
      */
     public Table() {
+        this.id = UUID.randomUUID().toString();
         this.active = true;  // Tables are active by default
+    }
+
+    /**
+     * Constructor with all fields except ID (generates new ID)
+     */
+    public Table(String tableNumber, String tableType, int capacity, int floor, String locationDescription, boolean active) {
+        this.id = UUID.randomUUID().toString();
+        this.tableNumber = tableNumber;
+        this.tableType = tableType;
+        this.capacity = capacity;
+        this.floor = floor;
+        this.locationDescription = locationDescription;
+        this.active = active;
     }
 
     /**
@@ -94,40 +109,63 @@ public class Table implements Serializable {
     }
 
     /**
-     * Gets the table's display name based on its ID
+     * Gets the table's display name based on its type and number
      */
     public String getDisplayName() {
-        if (id == null || id.isEmpty()) {
+        if (tableType == null || tableNumber == null) {
             return "Unknown Table";
         }
 
         String typeLabel;
-        char typeChar = id.charAt(0);
 
-        switch (typeChar) {
-            case 'f':
+        switch (tableType.toLowerCase()) {
+            case "family":
                 typeLabel = "Family";
                 break;
-            case 'l':
+            case "luxury":
                 typeLabel = "Luxury";
                 break;
-            case 'c':
+            case "couple":
                 typeLabel = "Couple";
                 break;
-            case 'r':
+            case "regular":
                 typeLabel = "Regular";
                 break;
             default:
                 typeLabel = "Table";
         }
 
-        // Extract number from the ID (e.g., "f1-3" -> "3")
-        String number = "";
-        if (id.contains("-")) {
-            number = id.substring(id.indexOf("-") + 1);
+        return typeLabel + " Table " + tableNumber;
+    }
+
+    /**
+     * Generate a table ID based on the type and number
+     * Format: f1-3 (for family table floor 1, number 3)
+     */
+    public String generateSystemId() {
+        if (tableType == null || tableNumber == null) {
+            return id;
         }
 
-        return typeLabel + " Table " + number;
+        String prefix;
+        switch (tableType.toLowerCase()) {
+            case "family":
+                prefix = "f";
+                break;
+            case "luxury":
+                prefix = "l";
+                break;
+            case "couple":
+                prefix = "c";
+                break;
+            case "regular":
+                prefix = "r";
+                break;
+            default:
+                prefix = "t";
+        }
+
+        return prefix + floor + "-" + tableNumber;
     }
 
     /**
@@ -149,9 +187,13 @@ public class Table implements Serializable {
      * Creates a Table object from a CSV format string.
      */
     public static Table fromCsvString(String csvLine) {
+        if (csvLine == null || csvLine.trim().isEmpty()) {
+            throw new IllegalArgumentException("Empty or null CSV line");
+        }
+
         String[] parts = csvLine.split(",");
         if (parts.length < 7) {
-            throw new IllegalArgumentException("Invalid CSV format for Table");
+            throw new IllegalArgumentException("Invalid CSV format for Table: " + csvLine);
         }
 
         // Parse capacity and floor
@@ -185,6 +227,7 @@ public class Table implements Serializable {
     public String toString() {
         return "Table{" +
                 "id='" + id + '\'' +
+                ", tableNumber='" + tableNumber + '\'' +
                 ", tableType='" + tableType + '\'' +
                 ", capacity=" + capacity +
                 ", floor=" + floor +

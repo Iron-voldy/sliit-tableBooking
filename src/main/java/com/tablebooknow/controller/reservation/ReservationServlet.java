@@ -3,6 +3,11 @@ package com.tablebooknow.controller.reservation;
 import com.tablebooknow.dao.ReservationDAO;
 import com.tablebooknow.model.reservation.Reservation;
 import com.tablebooknow.util.ReservationQueue;
+import com.tablebooknow.dao.ReservationDAO;
+import com.tablebooknow.dao.TableDAO;
+import com.tablebooknow.model.reservation.Reservation;
+import com.tablebooknow.model.table.Table;
+import com.tablebooknow.util.ReservationQueue;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -24,11 +29,13 @@ import java.util.stream.Collectors;
 public class ReservationServlet extends HttpServlet {
     private ReservationDAO reservationDAO;
     private ReservationQueue reservationQueue;
+    private TableDAO tableDAO;
 
     @Override
     public void init() throws ServletException {
         System.out.println("Initializing ReservationServlet");
         reservationDAO = new ReservationDAO();
+        tableDAO = new TableDAO();
         reservationQueue = new ReservationQueue();
     }
 
@@ -164,12 +171,23 @@ public class ReservationServlet extends HttpServlet {
             reservedTables = new ArrayList<>();
         }
 
+        // Get all active tables from our database
+        List<Table> activeTables = new ArrayList<>();
+        try {
+            activeTables = tableDAO.findAllActive();
+            System.out.println("Found " + activeTables.size() + " active tables");
+        } catch (Exception e) {
+            System.err.println("Error getting active tables: " + e.getMessage());
+            e.printStackTrace();
+        }
+
         // Store the data in session for use by the JSP
         session.setAttribute("reservationDate", reservationDate);
         session.setAttribute("reservationTime", reservationTime);
         session.setAttribute("bookingType", bookingType);
         session.setAttribute("reservationDuration", reservationDuration);
         request.setAttribute("reservedTables", reservedTables);
+        request.setAttribute("activeTables", activeTables);
 
         System.out.println("Forwarding to table selection JSP");
         request.getRequestDispatcher("/tableSelection.jsp").forward(request, response);
