@@ -10,8 +10,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -41,15 +44,8 @@ public class UserReservationsServlet extends HttpServlet {
             // Get all reservations for this user
             List<Reservation> userReservations = reservationDAO.findByUserId(userId);
 
-            // Sort reservations - most recent date first
-            userReservations.sort((r1, r2) -> {
-                // For reservations on the same date, sort by time
-                if (r1.getReservationDate().equals(r2.getReservationDate())) {
-                    return r1.getReservationTime().compareTo(r2.getReservationTime());
-                }
-                // Otherwise sort by date
-                return r2.getReservationDate().compareTo(r1.getReservationDate());
-            });
+            // Sort reservations using merge sort - by date and time
+            userReservations = mergeSortReservations(userReservations);
 
             // Set as request attribute
             request.setAttribute("userReservations", userReservations);
@@ -105,5 +101,115 @@ public class UserReservationsServlet extends HttpServlet {
 
         // Default: redirect to GET
         response.sendRedirect(request.getContextPath() + "/user/reservations");
+    }
+
+    /**
+     * Implementation of merge sort algorithm to sort reservations by date and time
+     * @param reservations The list of reservations to sort
+     * @return A new sorted list of reservations
+     */
+    private List<Reservation> mergeSortReservations(List<Reservation> reservations) {
+        // Base case: if the list has 0 or 1 elements, it's already sorted
+        if (reservations.size() <= 1) {
+            return reservations;
+        }
+
+        // Divide the list into two halves
+        int mid = reservations.size() / 2;
+        List<Reservation> left = new ArrayList<>(reservations.subList(0, mid));
+        List<Reservation> right = new ArrayList<>(reservations.subList(mid, reservations.size()));
+
+        // Recursively sort both halves
+        left = mergeSortReservations(left);
+        right = mergeSortReservations(right);
+
+        // Merge the sorted halves
+        return mergeReservations(left, right);
+    }
+
+    /**
+     * Merges two sorted lists of reservations
+     * @param left The left sorted list
+     * @param right The right sorted list
+     * @return A merged sorted list
+     */
+    private List<Reservation> mergeReservations(List<Reservation> left, List<Reservation> right) {
+        List<Reservation> result = new ArrayList<>();
+        int leftIndex = 0;
+        int rightIndex = 0;
+
+        while (leftIndex < left.size() && rightIndex < right.size()) {
+            Reservation leftRes = left.get(leftIndex);
+            Reservation rightRes = right.get(rightIndex);
+
+            try {
+                // First compare by date
+                LocalDate leftDate = LocalDate.parse(leftRes.getReservationDate());
+                LocalDate rightDate = LocalDate.parse(rightRes.getReservationDate());
+
+                int dateComparison = rightDate.compareTo(leftDate); // Descending by date (newest first)
+
+                if (dateComparison != 0) {
+                    // Dates are different, so we can decide based on the date comparison
+                    if (dateComparison > 0) {
+                        result.add(leftRes);
+                        leftIndex++;
+                    } else {
+                        result.add(rightRes);
+                        rightIndex++;
+                    }
+                } else {
+                    // Dates are the same, so compare by time
+                    LocalTime leftTime = LocalTime.parse(leftRes.getReservationTime());
+                    LocalTime rightTime = LocalTime.parse(rightRes.getReservationTime());
+
+                    if (leftTime.compareTo(rightTime) <= 0) {
+                        result.add(leftRes);
+                        leftIndex++;
+                    } else {
+                        result.add(rightRes);
+                        rightIndex++;
+                    }
+                }
+            } catch (DateTimeParseException e) {
+                // Handle parsing errors gracefully
+                System.err.println("Error parsing dates for sorting: " + e.getMessage());
+
+                // Fall back to string comparison if parsing fails
+                int dateComparison = rightRes.getReservationDate().compareTo(leftRes.getReservationDate());
+
+                if (dateComparison != 0) {
+                    if (dateComparison > 0) {
+                        result.add(leftRes);
+                        leftIndex++;
+                    } else {
+                        result.add(rightRes);
+                        rightIndex++;
+                    }
+                } else {
+                    int timeComparison = leftRes.getReservationTime().compareTo(rightRes.getReservationTime());
+                    if (timeComparison <= 0) {
+                        result.add(leftRes);
+                        leftIndex++;
+                    } else {
+                        result.add(rightRes);
+                        rightIndex++;
+                    }
+                }
+            }
+        }
+
+        // Add any remaining elements
+        while (leftIndex < left.size()) {
+            result.add(left.get(leftIndex));
+            leftIndex++;
+        }
+
+        while (rightIndex < right.size()) {
+            result.add(right.get(rightIndex));
+            rightIndex++;
+        }
+
+        return result;
     }
 }
